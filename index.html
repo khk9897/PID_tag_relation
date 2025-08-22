@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P&ID Tag Mapping System</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1>P&ID Tag Mapping System</h1>
+            <div class="header-controls">
+                <input type="file" id="pdf-upload" accept=".pdf" style="display: none;">
+                <button id="upload-btn" class="btn btn-primary">PDF 업로드</button>
+                <button id="save-btn" class="btn btn-secondary">저장</button>
+                <button id="load-btn" class="btn btn-secondary">불러오기</button>
+                <button id="export-btn" class="btn btn-success">Excel 출력</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-container">
+            <!-- PDF Viewer Section -->
+            <section class="pdf-section">
+                <div class="pdf-controls">
+                    <button id="zoom-in" class="btn btn-sm">+</button>
+                    <button id="zoom-out" class="btn btn-sm">-</button>
+                    <button id="zoom-fit" class="btn btn-sm">화면맞춤</button>
+                    <span id="zoom-level">100%</span>
+                    <div class="page-controls">
+                        <button id="prev-page" class="btn btn-sm">이전</button>
+                        <span id="page-info">1 / 1</span>
+                        <button id="next-page" class="btn btn-sm">다음</button>
+                    </div>
+                </div>
+                <div class="pdf-viewer-container">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div id="pdf-overlay" class="pdf-overlay"></div>
+                </div>
+                <div id="pdf-placeholder" class="pdf-placeholder">
+                    <div class="placeholder-content">
+                        <h3>PDF 파일을 업로드하세요</h3>
+                        <p>벡터 기반 P&ID PDF 파일을 선택해주세요</p>
+                        <button onclick="document.getElementById('pdf-upload').click()" class="btn btn-primary btn-large">
+                            파일 선택
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tags Panel Section -->
+            <section class="tags-section">
+                <div class="tags-header">
+                    <h2>태그 관리</h2>
+                    <div class="mapping-mode-indicator" id="mapping-mode">
+                        <span class="mode-text">일반 모드</span>
+                        <div class="mode-help">
+                            <small>R: 연결관계 | I: 설치관계 | Esc: 취소</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tag Tabs -->
+                <div class="tag-tabs">
+                    <button class="tab-btn active" data-tab="equipment">Equipment</button>
+                    <button class="tab-btn" data-tab="line">Line</button>
+                    <button class="tab-btn" data-tab="instrument">Instrument</button>
+                </div>
+
+                <!-- Search and Filter -->
+                <div class="tag-search">
+                    <input type="text" id="tag-search" placeholder="태그 검색...">
+                    <button id="auto-recognize" class="btn btn-primary">자동 인식</button>
+                <button id="pattern-settings" class="btn btn-secondary">패턴 설정</button>
+                </div>
+
+                <!-- Tag Lists -->
+                <div class="tag-content">
+                    <div class="tag-list active" id="equipment-list">
+                        <div class="tag-list-header">
+                            <h3>Equipment Tags</h3>
+                            <button class="btn btn-sm" onclick="addManualTag('equipment')">수동 추가</button>
+                        </div>
+                        <ul class="tags" id="equipment-tags"></ul>
+                    </div>
+                    
+                    <div class="tag-list" id="line-list">
+                        <div class="tag-list-header">
+                            <h3>Line Tags</h3>
+                            <button class="btn btn-sm" onclick="addManualTag('line')">수동 추가</button>
+                        </div>
+                        <ul class="tags" id="line-tags"></ul>
+                    </div>
+                    
+                    <div class="tag-list" id="instrument-list">
+                        <div class="tag-list-header">
+                            <h3>Instrument Tags</h3>
+                            <button class="btn btn-sm" onclick="addManualTag('instrument')">수동 추가</button>
+                        </div>
+                        <ul class="tags" id="instrument-tags"></ul>
+                    </div>
+                </div>
+
+                <!-- Relationships Panel -->
+                <div class="relationships-panel">
+                    <h3>관계 목록</h3>
+                    <div class="relationship-tabs">
+                        <button class="tab-btn active" data-rel-tab="connections">연결관계</button>
+                        <button class="tab-btn" data-rel-tab="installations">설치관계</button>
+                    </div>
+                    <div class="relationship-content">
+                        <ul id="connections-list" class="relationship-list active"></ul>
+                        <ul id="installations-list" class="relationship-list"></ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Pattern Settings Modal -->
+    <div id="pattern-settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content pattern-modal">
+            <div class="modal-header">
+                <h3>패턴 설정</h3>
+                <button class="modal-close" onclick="closePatternModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="pattern-tabs">
+                    <button class="pattern-tab-btn active" data-tab="default">기본 패턴</button>
+                    <button class="pattern-tab-btn" data-tab="custom">사용자 패턴</button>
+                    <button class="pattern-tab-btn" data-tab="test">패턴 테스트</button>
+                </div>
+                
+                <!-- Default Patterns Tab -->
+                <div class="pattern-tab-content active" id="default-patterns-tab">
+                    <h4>기본 패턴 설정</h4>
+                    <div id="default-patterns-list"></div>
+                </div>
+                
+                <!-- Custom Patterns Tab -->
+                <div class="pattern-tab-content" id="custom-patterns-tab">
+                    <div class="pattern-header">
+                        <h4>사용자 정의 패턴</h4>
+                        <button id="add-pattern-btn" class="btn btn-primary btn-sm">새 패턴 추가</button>
+                    </div>
+                    <div id="custom-patterns-list"></div>
+                    
+                    <!-- Add Pattern Form -->
+                    <div id="add-pattern-form" class="pattern-form" style="display: none;">
+                        <h5>새 패턴 추가</h5>
+                        <div class="form-group">
+                            <label>패턴 이름:</label>
+                            <input type="text" id="new-pattern-name" placeholder="예: Custom_Equipment">
+                        </div>
+                        <div class="form-group">
+                            <label>정규식 패턴:</label>
+                            <input type="text" id="new-pattern-regex" placeholder="예: ^[A-Z]+-\d{3}$">
+                        </div>
+                        <div class="form-group">
+                            <label>카테고리:</label>
+                            <select id="new-pattern-category">
+                                <option value="equipment">Equipment</option>
+                                <option value="line">Line</option>
+                                <option value="instrument">Instrument</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>색상:</label>
+                            <input type="color" id="new-pattern-color" value="#808080">
+                        </div>
+                        <div class="form-group">
+                            <label>설명:</label>
+                            <textarea id="new-pattern-description" placeholder="패턴에 대한 설명을 입력하세요"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button id="save-pattern-btn" class="btn btn-primary">저장</button>
+                            <button id="cancel-pattern-btn" class="btn btn-secondary">취소</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pattern Test Tab -->
+                <div class="pattern-tab-content" id="test-patterns-tab">
+                    <h4>패턴 테스트</h4>
+                    <div class="form-group">
+                        <label>테스트할 텍스트:</label>
+                        <input type="text" id="test-text" placeholder="예: P-101, FT-201, 2\"-P-101-A">
+                    </div>
+                    <div class="form-group">
+                        <label>테스트할 패턴:</label>
+                        <select id="test-pattern-select">
+                            <option value="">패턴을 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button id="test-pattern-btn" class="btn btn-primary">테스트</button>
+                    </div>
+                    <div id="test-results"></div>
+                    
+                    <div class="pattern-suggestions">
+                        <h5>패턴 제안</h5>
+                        <div id="pattern-suggestions-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="reset-patterns-btn" class="btn btn-danger">기본값으로 초기화</button>
+                <button id="export-patterns-btn" class="btn btn-secondary">패턴 내보내기</button>
+                <button id="import-patterns-btn" class="btn btn-secondary">패턴 가져오기</button>
+                <input type="file" id="import-patterns-file" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs" type="module"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

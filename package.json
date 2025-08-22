@@ -1,0 +1,21 @@
+{
+  "name": "pid-tag-mapping",
+  "version": "1.0.0",
+  "description": "P&ID Tag Mapping System - Web application for processing PDF P&ID files and mapping tag relationships",
+  "main": "index.html",
+  "scripts": {
+    "dev": "http-server . -p 3000 -c-1",
+    "build": "echo 'Build process - copy files to dist/'",
+    "start": "http-server . -p 3000"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.0.379",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": ["p&id", "pdf", "tag-mapping", "engineering"],
+  "author": "EPC Engineering Team",
+  "license": "MIT"
+}
