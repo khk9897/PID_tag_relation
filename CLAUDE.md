@@ -110,11 +110,19 @@ The system follows a client-heavy web architecture with local data persistence:
 
 ## Recent Development Notes
 
-### Known Issues & Improvements Needed
-- **Instrument Function Matching**: Spatial analysis for matching function codes (PT, FT, etc.) with instrument numbers needs refinement
-- **Pattern Settings**: All event listeners now properly connected, modal functionality restored
+### Recent Updates (2025-08-22)
+- **Enhanced Instrument Function Matching**: Significantly improved spatial analysis algorithm in `instrumentMatcher.js`
+  - Added adaptive search height calculation based on PDF text characteristics
+  - Improved horizontal alignment detection with configurable tolerance (1.5x instrument width)
+  - Implemented weighted distance calculation prioritizing vertical alignment
+  - Added automatic parameter adjustment using median spacing analysis
+  - Enhanced debugging and logging for better troubleshooting
+- **Pattern Settings**: All event listeners properly connected, modal functionality fully working
 - **PDF Highlighting**: Zoom-responsive positioning and color restoration working correctly
 - **Bidirectional Selection**: PDF highlight clicks properly select corresponding tags in panel
+
+### Known Issues & Improvements Needed
+- **Complex Layout Edge Cases**: In very dense P&ID layouts with overlapping text, some instrument functions may require manual verification
 
 ### Testing Requirements
 - Test instrument function matching with various PDF layouts

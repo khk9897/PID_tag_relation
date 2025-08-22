@@ -22,7 +22,8 @@
       "Bash(do echo \"Checking $file\")",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
