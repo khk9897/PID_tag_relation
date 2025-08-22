@@ -9,8 +9,17 @@ export class PDFManager {
         this.maxScale = 3.0;
         this.minScale = 0.3;
         
+        // Multi-selection properties
+        this.selectedTags = new Set(); // Store multiple selected tag IDs
+        this.isSelecting = false;
+        this.selectionStart = null;
+        this.selectionRect = null;
+        
         // Configure PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+        
+        // Setup multi-selection event handlers
+        this.setupMultiSelectionHandlers();
     }
 
     async loadPDF(file) {
@@ -352,18 +361,8 @@ export class PDFManager {
             box-shadow: 0 0 8px rgba(0,0,0,0.3);
         `;
         
-        // Add click event to highlight
-        highlight.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Trigger tag selection in the tag panel
-            if (this.onHighlightClick) {
-                this.onHighlightClick(tag.id, tag.category);
-            }
-            
-            console.log('PDF 하이라이트 클릭:', tag.name, tag.category);
-        });
+        // Click events are now handled by the multi-selection system
+        // in setupMultiSelectionHandlers() method
         
         // Create label text - use name directly (already includes function for instruments)
         let labelText = tag.name;
@@ -410,65 +409,22 @@ export class PDFManager {
         overlay.appendChild(highlight);
     }
 
-    // Highlight selected tag
+    // Highlight selected tag (legacy single selection support)
     highlightSelectedTag(tagId) {
-        // Remove previous selection highlights
+        // Clear multi-selections and use single selection mode
+        this.clearAllSelections();
+        this.selectedTags.clear();
+        
+        // Remove previous single selection highlights
         document.querySelectorAll('.tag-highlight.selected').forEach(el => {
             el.classList.remove('selected');
-            const category = el.dataset.tagCategory;
-            const isLine = category === 'line';
-            
-            // Restore default styling for all categories - 완전히 원래 상태로 복원
-            // 먼저 모든 스타일 속성을 완전히 제거
-            el.style.opacity = '';
-            el.style.boxShadow = '';
-            el.style.borderWidth = '';
-            el.style.transform = '';
-            el.style.animation = '';
-            el.style.zIndex = '';
-            el.style.background = '';
-            el.style.backgroundColor = '';
-            el.style.backgroundSize = '';
-            el.style.borderImage = '';
-            el.style.borderStyle = '';
-            el.style.borderColor = '';
-            el.style.outline = '';
-            el.style.outlineOffset = '';
-            el.style.filter = '';
-            
-            // 기본 스타일 재적용
-            const originalColor = this.getCategoryColor(category);
-            el.style.opacity = '0.4';
-            el.style.backgroundColor = originalColor;
-            el.style.border = `3px solid ${originalColor}`;
-            el.style.borderRadius = '6px';
-            el.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
-            el.style.zIndex = '10';
-            
-            // Reset label styling for all categories
-            const label = el.querySelector('.tag-label');
-            if (label) {
-                // Reset to default label styling with original color
-                const originalColor = this.getCategoryColor(category);
-                label.style.backgroundColor = originalColor;
-                label.style.fontSize = '11px';
-                label.style.padding = '4px 8px';
-                label.style.fontWeight = 'bold';
-                label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
-                label.style.border = '1px solid rgba(255,255,255,0.3)';
-                label.style.borderRadius = '4px';
-                label.style.color = 'white';
-                label.style.animation = 'none';
-                label.style.zIndex = '12';
-                label.style.boxShadow = '0 3px 8px rgba(0,0,0,0.4)';
-                label.style.transform = 'translateX(-50%)';
-            }
+            this.restoreDefaultTagStyle(el);
         });
         
         // If tagId is null, just clear highlights
         if (!tagId) return;
         
-        // Highlight selected tag with enhanced visibility - use querySelectorAll to avoid selector issues
+        // Highlight selected tag with enhanced visibility
         const highlights = document.querySelectorAll('.tag-highlight');
         let highlight = null;
         for (const el of highlights) {
@@ -478,27 +434,78 @@ export class PDFManager {
             }
         }
         if (highlight) {
-            const category = highlight.dataset.tagCategory;
-            const isLine = category === 'line';
-            
             highlight.classList.add('selected');
+            this.applySingleSelectionStyle(highlight);
             
-            // Standard enhancement for all selected tags
-            highlight.style.opacity = '0.8';
-            highlight.style.boxShadow = '0 0 20px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 255, 255, 0.5)';
-            highlight.style.borderWidth = '4px';
-            highlight.style.transform = 'scale(1.1)';
-            
-            // Make the label more prominent for selected tag
-            const label = highlight.querySelector('.tag-label');
-            if (label) {
-                label.style.backgroundColor = '#ff4444';
-                label.style.fontSize = '12px';
-                label.style.padding = '6px 10px';
-                label.style.fontWeight = '900';
-                label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
-                label.style.border = '2px solid #fff';
-            }
+            // Also add to multi-selection set for consistency
+            this.selectedTags.add(tagId);
+        }
+    }
+
+    // Restore default tag styling
+    restoreDefaultTagStyle(element) {
+        const category = element.dataset.tagCategory;
+        
+        // Reset all style properties
+        element.style.opacity = '';
+        element.style.boxShadow = '';
+        element.style.borderWidth = '';
+        element.style.transform = '';
+        element.style.animation = '';
+        element.style.zIndex = '';
+        element.style.background = '';
+        element.style.backgroundColor = '';
+        element.style.backgroundSize = '';
+        element.style.borderImage = '';
+        element.style.borderStyle = '';
+        element.style.borderColor = '';
+        element.style.outline = '';
+        element.style.outlineOffset = '';
+        element.style.filter = '';
+        
+        // Apply default styling
+        const originalColor = this.getCategoryColor(category);
+        element.style.opacity = '0.4';
+        element.style.backgroundColor = originalColor;
+        element.style.border = `3px solid ${originalColor}`;
+        element.style.borderRadius = '6px';
+        element.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
+        element.style.zIndex = '10';
+        
+        // Reset label styling
+        const label = element.querySelector('.tag-label');
+        if (label) {
+            label.style.backgroundColor = originalColor;
+            label.style.fontSize = '11px';
+            label.style.padding = '4px 8px';
+            label.style.fontWeight = 'bold';
+            label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+            label.style.border = '1px solid rgba(255,255,255,0.3)';
+            label.style.borderRadius = '4px';
+            label.style.color = 'white';
+            label.style.animation = 'none';
+            label.style.zIndex = '12';
+            label.style.boxShadow = '0 3px 8px rgba(0,0,0,0.4)';
+            label.style.transform = 'translateX(-50%)';
+        }
+    }
+
+    // Apply single selection styling
+    applySingleSelectionStyle(element) {
+        element.style.opacity = '0.8';
+        element.style.boxShadow = '0 0 20px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 255, 255, 0.5)';
+        element.style.borderWidth = '4px';
+        element.style.transform = 'scale(1.1)';
+        
+        // Make the label more prominent for selected tag
+        const label = element.querySelector('.tag-label');
+        if (label) {
+            label.style.backgroundColor = '#ff4444';
+            label.style.fontSize = '12px';
+            label.style.padding = '6px 10px';
+            label.style.fontWeight = '900';
+            label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+            label.style.border = '2px solid #fff';
         }
     }
 
@@ -529,5 +536,264 @@ export class PDFManager {
         if (allTags) {
             this.updateTagHighlights(allTags);
         }
+    }
+
+    // Setup multi-selection event handlers
+    setupMultiSelectionHandlers() {
+        const overlay = document.getElementById('pdf-overlay');
+        
+        // Mouse down - start selection or handle click
+        overlay.addEventListener('mousedown', (e) => {
+            this.handleMouseDown(e);
+        });
+        
+        // Mouse move - update selection rectangle
+        overlay.addEventListener('mousemove', (e) => {
+            this.handleMouseMove(e);
+        });
+        
+        // Mouse up - complete selection
+        overlay.addEventListener('mouseup', (e) => {
+            this.handleMouseUp(e);
+        });
+        
+        // Prevent context menu
+        overlay.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    }
+
+    // Handle mouse down event
+    handleMouseDown(e) {
+        e.preventDefault();
+        
+        // Check if clicking on a tag highlight
+        const clickedTag = e.target.closest('.tag-highlight');
+        
+        if (clickedTag) {
+            // Handle tag click
+            this.handleTagClick(clickedTag, e.ctrlKey || e.metaKey);
+        } else {
+            // Start drag selection (only if not holding Ctrl)
+            if (!e.ctrlKey && !e.metaKey) {
+                this.startDragSelection(e);
+            }
+        }
+    }
+
+    // Handle mouse move event
+    handleMouseMove(e) {
+        if (this.isSelecting) {
+            this.updateDragSelection(e);
+        }
+    }
+
+    // Handle mouse up event
+    handleMouseUp(e) {
+        if (this.isSelecting) {
+            this.completeDragSelection(e);
+        }
+    }
+
+    // Handle tag click with multi-selection support
+    handleTagClick(tagElement, isCtrlClick) {
+        const tagId = tagElement.dataset.tagId;
+        const tagCategory = tagElement.dataset.tagCategory;
+        
+        if (isCtrlClick) {
+            // Ctrl+click: toggle selection
+            if (this.selectedTags.has(tagId)) {
+                this.selectedTags.delete(tagId);
+                this.removeTagSelection(tagElement);
+            } else {
+                this.selectedTags.add(tagId);
+                this.addTagSelection(tagElement);
+            }
+        } else {
+            // Regular click: single selection
+            this.clearAllSelections();
+            this.selectedTags.clear();
+            this.selectedTags.add(tagId);
+            this.addTagSelection(tagElement);
+        }
+        
+        // Notify app of selection change
+        if (this.onMultipleTagsSelected) {
+            this.onMultipleTagsSelected(Array.from(this.selectedTags), tagCategory);
+        }
+    }
+
+    // Start drag selection
+    startDragSelection(e) {
+        this.isSelecting = true;
+        this.selectionStart = this.getMousePosition(e);
+        
+        // Clear existing selections if not holding Ctrl
+        this.clearAllSelections();
+        this.selectedTags.clear();
+        
+        // Create selection rectangle element
+        this.createSelectionRectangle();
+    }
+
+    // Update drag selection
+    updateDragSelection(e) {
+        if (!this.isSelecting || !this.selectionStart) return;
+        
+        const currentPos = this.getMousePosition(e);
+        const rect = {
+            x: Math.min(this.selectionStart.x, currentPos.x),
+            y: Math.min(this.selectionStart.y, currentPos.y),
+            width: Math.abs(currentPos.x - this.selectionStart.x),
+            height: Math.abs(currentPos.y - this.selectionStart.y)
+        };
+        
+        this.updateSelectionRectangle(rect);
+    }
+
+    // Complete drag selection
+    completeDragSelection(e) {
+        if (!this.isSelecting) return;
+        
+        const currentPos = this.getMousePosition(e);
+        const selectionRect = {
+            x: Math.min(this.selectionStart.x, currentPos.x),
+            y: Math.min(this.selectionStart.y, currentPos.y),
+            width: Math.abs(currentPos.x - this.selectionStart.x),
+            height: Math.abs(currentPos.y - this.selectionStart.y)
+        };
+        
+        // Find tags within selection rectangle
+        this.selectTagsInRectangle(selectionRect);
+        
+        // Clean up
+        this.removeSelectionRectangle();
+        this.isSelecting = false;
+        this.selectionStart = null;
+    }
+
+    // Get mouse position relative to overlay
+    getMousePosition(e) {
+        const overlay = document.getElementById('pdf-overlay');
+        const rect = overlay.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    // Create selection rectangle element
+    createSelectionRectangle() {
+        this.selectionRect = document.createElement('div');
+        this.selectionRect.className = 'selection-rectangle';
+        this.selectionRect.style.cssText = `
+            position: absolute;
+            border: 2px dashed #007bff;
+            background: rgba(0, 123, 255, 0.1);
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        `;
+        document.getElementById('pdf-overlay').appendChild(this.selectionRect);
+    }
+
+    // Update selection rectangle
+    updateSelectionRectangle(rect) {
+        if (!this.selectionRect) return;
+        
+        this.selectionRect.style.left = rect.x + 'px';
+        this.selectionRect.style.top = rect.y + 'px';
+        this.selectionRect.style.width = rect.width + 'px';
+        this.selectionRect.style.height = rect.height + 'px';
+        this.selectionRect.style.display = 'block';
+    }
+
+    // Remove selection rectangle
+    removeSelectionRectangle() {
+        if (this.selectionRect) {
+            this.selectionRect.remove();
+            this.selectionRect = null;
+        }
+    }
+
+    // Select tags within rectangle
+    selectTagsInRectangle(rect) {
+        const highlights = document.querySelectorAll('.tag-highlight');
+        const selectedCategories = new Set();
+        
+        highlights.forEach(highlight => {
+            const highlightRect = highlight.getBoundingClientRect();
+            const overlayRect = document.getElementById('pdf-overlay').getBoundingClientRect();
+            
+            // Convert to overlay coordinates
+            const tagRect = {
+                x: highlightRect.left - overlayRect.left,
+                y: highlightRect.top - overlayRect.top,
+                width: highlightRect.width,
+                height: highlightRect.height
+            };
+            
+            // Check if tag intersects with selection rectangle
+            if (this.rectanglesIntersect(rect, tagRect)) {
+                const tagId = highlight.dataset.tagId;
+                const tagCategory = highlight.dataset.tagCategory;
+                
+                this.selectedTags.add(tagId);
+                selectedCategories.add(tagCategory);
+                this.addTagSelection(highlight);
+            }
+        });
+        
+        // Notify app of selection change
+        if (this.onMultipleTagsSelected && this.selectedTags.size > 0) {
+            this.onMultipleTagsSelected(Array.from(this.selectedTags), Array.from(selectedCategories));
+        }
+    }
+
+    // Check if two rectangles intersect
+    rectanglesIntersect(rect1, rect2) {
+        return !(rect1.x + rect1.width < rect2.x || 
+                rect2.x + rect2.width < rect1.x || 
+                rect1.y + rect1.height < rect2.y || 
+                rect2.y + rect2.height < rect1.y);
+    }
+
+    // Add visual selection to tag
+    addTagSelection(tagElement) {
+        tagElement.classList.add('multi-selected');
+        tagElement.style.boxShadow = '0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4)';
+        tagElement.style.borderColor = '#ff0000';
+        tagElement.style.borderWidth = '3px';
+        tagElement.style.zIndex = '15';
+    }
+
+    // Remove visual selection from tag
+    removeTagSelection(tagElement) {
+        tagElement.classList.remove('multi-selected');
+        const category = tagElement.dataset.tagCategory;
+        const originalColor = this.getCategoryColor(category);
+        
+        tagElement.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
+        tagElement.style.borderColor = originalColor;
+        tagElement.style.borderWidth = '3px';
+        tagElement.style.zIndex = '10';
+    }
+
+    // Clear all selections
+    clearAllSelections() {
+        document.querySelectorAll('.tag-highlight.multi-selected').forEach(element => {
+            this.removeTagSelection(element);
+        });
+    }
+
+    // Get selected tags
+    getSelectedTags() {
+        return Array.from(this.selectedTags);
+    }
+
+    // Clear selections
+    clearSelections() {
+        this.clearAllSelections();
+        this.selectedTags.clear();
     }
 }

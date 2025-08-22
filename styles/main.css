@@ -961,3 +961,83 @@ input:checked + .toggle-slider:before {
         flex-direction: column;
     }
 }
+
+/* Multi-selection Styles */
+.tag-highlight.multi-selected {
+    border-color: #ff0000 !important;
+    border-width: 3px !important;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4) !important;
+    z-index: 15 !important;
+    animation: multiSelectPulse 2s ease-in-out infinite;
+}
+
+@keyframes multiSelectPulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4);
+        transform: scale(1.05);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 40px rgba(255, 0, 0, 0.6);
+        transform: scale(1.1);
+    }
+}
+
+.selection-rectangle {
+    border: 2px dashed #007bff !important;
+    background: rgba(0, 123, 255, 0.1) !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
+    border-radius: 2px;
+}
+
+/* Selection info tooltip */
+#selection-info {
+    user-select: none;
+    pointer-events: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: opacity 0.3s ease;
+}
+
+.mode-help {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mode-help small {
+    color: #ecf0f1;
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* Enhanced tag item selection in panel */
+.tag-item.selected {
+    background: linear-gradient(135deg, #ff4444, #ff6666) !important;
+    color: white !important;
+    border: 2px solid #ff0000 !important;
+    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4) !important;
+    transform: translateX(5px);
+    transition: all 0.3s ease;
+}
+
+.tag-item.selected .tag-name {
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+/* PDF overlay cursor styles */
+.pdf-overlay {
+    cursor: crosshair;
+}
+
+.pdf-overlay:active {
+    cursor: crosshair;
+}
+
+.pdf-overlay .tag-highlight {
+    cursor: pointer;
+}
+
+.pdf-overlay .tag-highlight:hover {
+    cursor: pointer;
+}

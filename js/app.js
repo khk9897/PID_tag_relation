@@ -19,9 +19,14 @@ class PIDApp {
         this.mappingMode = 'normal'; // normal, connection, installation
         this.selectedTags = [];
         
-        // Set up PDF highlight click callback
+        // Set up PDF highlight click callback (legacy single selection)
         this.pdfManager.onHighlightClick = (tagId, tagCategory) => {
             this.selectTagFromPDF(tagId, tagCategory);
+        };
+        
+        // Set up PDF multi-selection callback
+        this.pdfManager.onMultipleTagsSelected = (tagIds, categories) => {
+            this.handleMultipleTagSelection(tagIds, categories);
         };
         
         // Set up PDF page rendering callback for highlight updates
@@ -208,6 +213,85 @@ class PIDApp {
         }
     }
 
+    // 다중 태그 선택 핸들러
+    handleMultipleTagSelection(tagIds, categories) {
+        console.log('다중 태그 선택:', tagIds, categories);
+        
+        if (tagIds.length === 0) {
+            this.clearTagHighlights();
+            return;
+        }
+        
+        // 단일 카테고리인 경우 해당 탭으로 전환
+        if (categories.length === 1) {
+            this.switchToTab(categories[0]);
+        }
+        
+        // 태그 패널에서 해당 태그들을 모두 선택 표시
+        this.clearTagHighlights();
+        
+        tagIds.forEach(tagId => {
+            // 모든 태그 아이템을 검사해서 찾기
+            const allTagItems = document.querySelectorAll('.tag-item');
+            for (const item of allTagItems) {
+                if (item.dataset.tagId === tagId || item.dataset.id === tagId) {
+                    item.classList.add('selected');
+                    break;
+                }
+            }
+        });
+        
+        // 첫 번째 선택된 태그로 스크롤
+        if (tagIds.length > 0) {
+            const firstTagElement = document.querySelector(`[data-tag-id="${tagIds[0]}"]`);
+            if (firstTagElement) {
+                firstTagElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        // 선택 정보 표시
+        this.showSelectionInfo(tagIds.length, categories);
+    }
+
+    // 선택 정보 표시
+    showSelectionInfo(count, categories) {
+        const selectionInfo = document.getElementById('selection-info');
+        if (!selectionInfo) {
+            // 선택 정보 표시용 엘리먼트 생성
+            const info = document.createElement('div');
+            info.id = 'selection-info';
+            info.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #007bff;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-size: 14px;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            `;
+            document.body.appendChild(info);
+        }
+        
+        const info = document.getElementById('selection-info');
+        if (count > 0) {
+            const categoryText = categories.length === 1 ? categories[0] : 'mixed';
+            info.textContent = `${count}개 태그 선택됨 (${categoryText})`;
+            info.style.display = 'block';
+            
+            // 3초 후 자동 숨김
+            setTimeout(() => {
+                if (info) {
+                    info.style.display = 'none';
+                }
+            }, 3000);
+        } else {
+            info.style.display = 'none';
+        }
+    }
+
     // 탭 전환 헬퍼 함수
     switchToTab(category) {
         // 탭 버튼 업데이트
@@ -261,6 +345,9 @@ class PIDApp {
                     e.preventDefault();
                     this.setMappingMode('normal');
                     this.clearSelection();
+                    // Also clear PDF multi-selections
+                    this.pdfManager.clearSelections();
+                    this.showSelectionInfo(0, []);
                     break;
                 case '+':
                 case '=':
