@@ -278,6 +278,40 @@ body {
     margin-left: auto;
 }
 
+/* Special styling for line tag items */
+.tag-item[data-type="line"] {
+    background: linear-gradient(135deg, #fff9c4, #fffde7);
+    border-left: 4px solid #ffc107;
+}
+
+.tag-item[data-type="line"]:hover {
+    background: linear-gradient(135deg, #fff59d, #ffeb3b);
+    transform: translateX(3px);
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+.tag-item[data-type="line"].selected {
+    background: linear-gradient(135deg, #ffc107, #ffeb3b);
+    border-left: 5px solid #ff9800;
+    color: #333;
+    font-weight: bold;
+    animation: lineItemGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes lineItemGlow {
+    from {
+        box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    }
+    to {
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
+    }
+}
+
+.tag-item[data-type="line"] .tag-name {
+    color: #e65100;
+    font-weight: 600;
+}
+
 .tag-name {
     font-weight: 500;
     color: #2c3e50;
@@ -751,7 +785,97 @@ input:checked + .toggle-slider:before {
 
 .pdf-overlay .tag-highlight[data-tag-category="line"] {
     border-color: #ffc107;
-    box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.8);
+    background: linear-gradient(135deg, #ffc107, #ffeb3b);
+    border-width: 4px !important;
+    opacity: 0.6 !important;
+}
+
+.pdf-overlay .tag-highlight[data-tag-category="line"]:hover {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 1) !important;
+    transform: scale(1.1) !important;
+    opacity: 0.8 !important;
+}
+
+.pdf-overlay .tag-highlight[data-tag-category="line"].selected {
+    background: linear-gradient(45deg, #ffc107, #ffeb3b, #fff59d) !important;
+    border-width: 6px !important;
+    animation: lineTagPulse 2s ease-in-out infinite !important;
+}
+
+@keyframes lineTagPulse {
+    0%, 100% {
+        box-shadow: 0 0 25px rgba(255, 193, 7, 1), 0 0 50px rgba(255, 193, 7, 0.7), 0 0 10px rgba(255, 255, 255, 1);
+        transform: scale(1.15);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 193, 7, 1), 0 0 60px rgba(255, 193, 7, 0.8), 0 0 15px rgba(255, 255, 255, 1);
+        transform: scale(1.2);
+    }
+}
+
+/* Base animation for line tags */
+@keyframes lineBaseGlow {
+    0% {
+        box-shadow: 0 0 20px rgba(255, 107, 0, 1), 0 0 40px rgba(255, 193, 7, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5);
+        background-position: 0% 50%;
+    }
+    100% {
+        box-shadow: 0 0 30px rgba(255, 107, 0, 1), 0 0 60px rgba(255, 193, 7, 1), inset 0 0 15px rgba(255, 255, 255, 0.7);
+        background-position: 100% 50%;
+    }
+}
+
+/* Extreme animations for selected line tags */
+@keyframes lineExtremeHighlight {
+    0% {
+        opacity: 1.0;
+        transform: scale(1.5);
+    }
+    100% {
+        opacity: 0.9;
+        transform: scale(1.6);
+    }
+}
+
+@keyframes backgroundShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes borderPulse {
+    0% {
+        border-width: 10px;
+        outline-offset: 4px;
+    }
+    50% {
+        border-width: 12px;
+        outline-offset: 8px;
+    }
+    100% {
+        border-width: 10px;
+        outline-offset: 4px;
+    }
+}
+
+@keyframes labelBlink {
+    0% {
+        opacity: 1;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.5);
+        transform: translateX(-50%) scale(1.1);
+    }
+    100% {
+        opacity: 0.8;
+        box-shadow: 0 0 30px rgba(255, 0, 0, 1), 0 0 60px rgba(255, 0, 0, 0.8);
+        transform: translateX(-50%) scale(1.2);
+    }
 }
 
 .pdf-overlay .tag-highlight[data-tag-category="instrument"] {

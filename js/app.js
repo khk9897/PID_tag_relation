@@ -39,57 +39,78 @@ class PIDApp {
             document.getElementById('pdf-upload').click();
         });
 
-        // PDF Controls
-        document.getElementById('zoom-in').addEventListener('click', () => {
-            this.pdfManager.zoomIn();
+        // 초기화 버튼 이벤트
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if (confirm('모든 태그, 관계, 저장 데이터를 초기화하시겠습니까?')) {
+                this.resetProject();
+            }
         });
 
-        document.getElementById('zoom-out').addEventListener('click', () => {
-            this.pdfManager.zoomOut();
-        });
-
-        document.getElementById('zoom-fit').addEventListener('click', () => {
-            this.pdfManager.fitToScreen();
-        });
-
+        // PDF 페이지 넘김 버튼 이벤트
         document.getElementById('prev-page').addEventListener('click', () => {
             this.pdfManager.previousPage();
             this.updateTagListsForCurrentPage();
         });
-
         document.getElementById('next-page').addEventListener('click', () => {
             this.pdfManager.nextPage();
             this.updateTagListsForCurrentPage();
         });
-
-        // Project Management
-        document.getElementById('save-btn').addEventListener('click', () => {
-            this.saveProject();
-        });
-
-        document.getElementById('load-btn').addEventListener('click', () => {
-            this.loadProject();
-        });
-
-        document.getElementById('export-btn').addEventListener('click', () => {
-            this.exportToExcel();
-        });
-
-        // Auto Recognition
-        document.getElementById('auto-recognize').addEventListener('click', () => {
-            this.autoRecognizeTags();
-        });
-
-        // Pattern Settings
-        document.getElementById('pattern-settings').addEventListener('click', () => {
-            this.openPatternModal();
-        });
-
-        // Tag Search
-        document.getElementById('tag-search').addEventListener('input', (e) => {
-            this.filterTags(e.target.value);
-        });
     }
+
+    // 프로젝트 및 저장 데이터 초기화
+    resetProject() {
+        // 현재 프로젝트 초기화
+        this.currentProject = null;
+        
+        // 매핑 모드 초기화
+        this.setMappingMode('normal');
+        this.selectedTags = [];
+        
+        // 저장 데이터 초기화
+        this.storageManager.clearAllData();
+        
+        // PDF 관련 초기화
+        if (this.pdfManager.currentPDF) {
+            this.pdfManager.currentPDF = null;
+            this.pdfManager.currentPage = 1;
+            this.pdfManager.scale = 1.0;
+        }
+        
+        // PDF 캔버스 및 오버레이 초기화
+        if (this.pdfManager.clearHighlights) {
+            this.pdfManager.clearHighlights();
+        }
+        
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const overlay = document.getElementById('pdf-overlay');
+        overlay.innerHTML = '';
+        
+        // PDF 플레이스홀더 표시
+        document.getElementById('pdf-placeholder').style.display = 'flex';
+        
+        // UI 갱신
+        this.updateTagLists();
+        this.updateRelationshipLists();
+        this.updatePageTagCounters();
+        
+        // 페이지 정보 초기화
+        document.getElementById('page-info').textContent = '1 / 1';
+        document.getElementById('zoom-level').textContent = '100%';
+        
+        // 검색 필드 초기화
+        document.getElementById('tag-search').value = '';
+        
+        // 패턴 설정 초기화 (기본 패턴으로 복원)
+        if (this.patternUI && this.patternUI.patternManager) {
+            this.patternUI.patternManager.resetToDefaults();
+        }
+        
+        alert('프로젝트가 완전히 초기화되었습니다.');
+    }
+    // ...existing code...
 
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
@@ -314,10 +335,12 @@ class PIDApp {
             const container = document.getElementById(`${type}-tags`);
             container.innerHTML = '';
             
-            this.currentProject.tags[type].forEach((tag, index) => {
-                const item = this.createTagItem(tag, type, index);
-                container.appendChild(item);
-            });
+            if (this.currentProject && this.currentProject.tags) {
+                this.currentProject.tags[type].forEach((tag, index) => {
+                    const item = this.createTagItem(tag, type, index);
+                    container.appendChild(item);
+                });
+            }
         });
     }
 
@@ -495,18 +518,22 @@ class PIDApp {
         // Update connections
         const connectionsContainer = document.getElementById('connections-list');
         connectionsContainer.innerHTML = '';
-        this.currentProject.relationships.connections.forEach((rel, index) => {
-            const item = this.createRelationshipItem(rel, 'connections', index);
-            connectionsContainer.appendChild(item);
-        });
+        if (this.currentProject && this.currentProject.relationships) {
+            this.currentProject.relationships.connections.forEach((rel, index) => {
+                const item = this.createRelationshipItem(rel, 'connections', index);
+                connectionsContainer.appendChild(item);
+            });
+        }
 
         // Update installations
         const installationsContainer = document.getElementById('installations-list');
         installationsContainer.innerHTML = '';
-        this.currentProject.relationships.installations.forEach((rel, index) => {
-            const item = this.createRelationshipItem(rel, 'installations', index);
-            installationsContainer.appendChild(item);
-        });
+        if (this.currentProject && this.currentProject.relationships) {
+            this.currentProject.relationships.installations.forEach((rel, index) => {
+                const item = this.createRelationshipItem(rel, 'installations', index);
+                installationsContainer.appendChild(item);
+            });
+        }
     }
 
     createRelationshipItem(relationship, type, index) {

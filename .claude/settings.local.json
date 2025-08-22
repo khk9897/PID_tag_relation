@@ -13,7 +13,16 @@
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
       "Bash(git push:*)",
-      "Bash(git remote remove:*)"
+      "Bash(git remote remove:*)",
+      "Bash(git commit:*)",
+      "Bash(cp:*)",
+      "Bash(ls:*)",
+      "Bash(node:*)",
+      "Bash(for file in js/modules/*.js)",
+      "Bash(do echo \"Checking $file\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

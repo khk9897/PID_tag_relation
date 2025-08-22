@@ -381,14 +381,21 @@ export class StorageManager {
 
     // Clear all stored data
     clearAllData() {
-        if (confirm('모든 저장된 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        try {
             localStorage.removeItem(this.storageKey);
             localStorage.removeItem(this.autoSaveKey);
             localStorage.removeItem(this.settingsKey);
-            alert('모든 데이터가 삭제되었습니다.');
+            
+            // Also clear pattern data if exists
+            localStorage.removeItem('pid_tag_patterns');
+            localStorage.removeItem('pid_custom_patterns');
+            
+            console.log('모든 저장 데이터 초기화 완료');
             return true;
+        } catch (error) {
+            console.error('데이터 초기화 실패:', error);
+            return false;
         }
-        return false;
     }
 
     // Save user settings

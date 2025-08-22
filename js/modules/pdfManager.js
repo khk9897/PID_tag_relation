@@ -280,22 +280,35 @@ export class PDFManager {
 
     // Add highlight overlay on PDF
     addTagHighlight(tag, color = null) {
-        if (!tag.position || !this.currentPDF) return;
+        if (!tag.position || !this.currentPDF) {
+            console.log('라이트 실패 - 위치 정보 없음:', tag.name, tag.category, !!tag.position);
+            return;
+        }
 
         const { x, y, width, height, page } = tag.position;
         
         // Only show highlights for current page
-        if (page !== this.currentPage) return;
+        if (page !== this.currentPage) {
+            console.log('하이라이트 스킵 - 다른 페이지:', tag.name, tag.category, 'tag page:', page, 'current page:', this.currentPage);
+            return;
+        }
+
+        console.log('하이라이트 추가 시도:', tag.name, tag.category, tag.position);
 
         const overlay = document.getElementById('pdf-overlay');
         const canvas = document.getElementById('pdf-canvas');
         
         // Calculate scaled position with expanded area for better visibility
-        const padding = 2; // Add padding around the text
+        // Line tags get more padding for better visibility
+        const padding = tag.category === 'line' ? 4 : 2;
         const scaledX = (x - padding) * this.scale;
         const scaledY = (y - padding) * this.scale;
         const scaledWidth = (width + padding * 2) * this.scale;
         const scaledHeight = (height + padding * 2) * this.scale;
+        
+        // Minimum height for line tags to ensure visibility
+        const minHeight = tag.category === 'line' ? 20 : 0;
+        const finalHeight = Math.max(scaledHeight, minHeight);
         
         // Create highlight element
         const highlight = document.createElement('div');
@@ -303,15 +316,19 @@ export class PDFManager {
         highlight.dataset.tagId = tag.id;
         highlight.dataset.tagCategory = tag.category;
         
-        // Determine highlight color
+        // Determine highlight color and style based on tag category
         const highlightColor = color || tag.patternColor || this.getCategoryColor(tag.category);
         
+        // Special styling for line tags - make them MUCH more visible
+        const isLine = tag.category === 'line';
+        
+        // Standard styling for all tags
         highlight.style.cssText = `
             position: absolute;
             left: ${scaledX}px;
             top: ${scaledY}px;
             width: ${scaledWidth}px;
-            height: ${scaledHeight}px;
+            height: ${finalHeight}px;
             background-color: ${highlightColor};
             opacity: 0.4;
             border: 3px solid ${highlightColor};
@@ -375,19 +392,61 @@ export class PDFManager {
         // Remove previous selection highlights
         document.querySelectorAll('.tag-highlight.selected').forEach(el => {
             el.classList.remove('selected');
+            const category = el.dataset.tagCategory;
+            const isLine = category === 'line';
+            
+            // Restore default styling for all categories
             el.style.opacity = '0.4';
             el.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
             el.style.borderWidth = '3px';
             el.style.transform = 'scale(1)';
+            el.style.animation = 'none';
+            el.style.zIndex = '10';
+            el.style.background = '';
+            el.style.backgroundSize = 'auto';
+            el.style.borderImage = 'none';
+            el.style.borderStyle = 'solid';
+            el.style.outline = 'none';
+            el.style.outlineOffset = '0px';
+            el.style.filter = 'none';
+            
+            // Reset label styling for all categories
+            const label = el.querySelector('.tag-label');
+            if (label) {
+                // Reset to default label styling
+                label.style.fontSize = '11px';
+                label.style.padding = '4px 8px';
+                label.style.fontWeight = 'bold';
+                label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+                label.style.border = '1px solid rgba(255,255,255,0.3)';
+                label.style.borderRadius = '4px';
+                label.style.color = 'white';
+                label.style.animation = 'none';
+                label.style.zIndex = '12';
+                label.style.boxShadow = '0 3px 8px rgba(0,0,0,0.4)';
+                label.style.transform = 'translateX(-50%)';
+            }
         });
         
         // If tagId is null, just clear highlights
         if (!tagId) return;
         
-        // Highlight selected tag with enhanced visibility
-        const highlight = document.querySelector(`[data-tag-id="${tagId}"]`);
+        // Highlight selected tag with enhanced visibility - use querySelectorAll to avoid selector issues
+        const highlights = document.querySelectorAll('.tag-highlight');
+        let highlight = null;
+        for (const el of highlights) {
+            if (el.dataset.tagId === tagId) {
+                highlight = el;
+                break;
+            }
+        }
         if (highlight) {
+            const category = highlight.dataset.tagCategory;
+            const isLine = category === 'line';
+            
             highlight.classList.add('selected');
+            
+            // Standard enhancement for all selected tags
             highlight.style.opacity = '0.8';
             highlight.style.boxShadow = '0 0 20px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 255, 255, 0.5)';
             highlight.style.borderWidth = '4px';
@@ -401,6 +460,7 @@ export class PDFManager {
                 label.style.padding = '6px 10px';
                 label.style.fontWeight = '900';
                 label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+                label.style.border = '2px solid #fff';
             }
         }
     }
