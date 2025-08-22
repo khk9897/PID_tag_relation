@@ -19,6 +19,11 @@ class PIDApp {
         this.mappingMode = 'normal'; // normal, connection, installation
         this.selectedTags = [];
         
+        // Set up PDF highlight click callback
+        this.pdfManager.onHighlightClick = (tagId, tagCategory) => {
+            this.selectTagFromPDF(tagId, tagCategory);
+        };
+        
         this.init();
     }
 
@@ -110,6 +115,69 @@ class PIDApp {
         
         alert('프로젝트가 완전히 초기화되었습니다.');
     }
+
+    // PDF 하이라이트 클릭 시 태그 선택
+    selectTagFromPDF(tagId, tagCategory) {
+        console.log('PDF에서 태그 선택:', tagId, tagCategory);
+        
+        if (!this.currentProject || !this.currentProject.tags) {
+            return;
+        }
+        
+        // 해당 카테고리의 탭을 활성화
+        this.switchToTab(tagCategory);
+        
+        // 태그 목록에서 해당 태그를 찾아서 클릭 이벤트 트리거
+        const tagElement = document.querySelector(`[data-tag-id="${CSS.escape(tagId)}"]`);
+        if (tagElement) {
+            // 기존 선택 해제
+            document.querySelectorAll('.tag-item.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // 새 태그 선택
+            tagElement.classList.add('selected');
+            tagElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // 태그 클릭 핸들러 호출
+            const tag = this.findTagById(tagId);
+            if (tag) {
+                this.handleTagClick(tag, tagCategory);
+            }
+        }
+    }
+
+    // 탭 전환 헬퍼 함수
+    switchToTab(category) {
+        // 탭 버튼 업데이트
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${category}"]`).classList.add('active');
+        
+        // 태그 리스트 업데이트
+        document.querySelectorAll('.tag-list').forEach(list => {
+            list.classList.remove('active');
+        });
+        document.getElementById(`${category}-list`).classList.add('active');
+    }
+
+    // ID로 태그 찾기 헬퍼 함수
+    findTagById(tagId) {
+        if (!this.currentProject || !this.currentProject.tags) {
+            return null;
+        }
+        
+        for (const category of ['equipment', 'line', 'instrument']) {
+            const tag = this.currentProject.tags[category].find(t => t.id === tagId);
+            if (tag) {
+                return tag;
+            }
+        }
+        
+        return null;
+    }
+
     // ...existing code...
 
     setupKeyboardShortcuts() {
@@ -406,6 +474,7 @@ class PIDApp {
         li.dataset.type = type;
         li.dataset.index = index;
         li.dataset.id = tag.id;
+        li.dataset.tagId = tag.id;  // 추가: PDF 하이라이트와 연결용
 
         // Create display content based on tag type
         let tagInfo = tag.type || '';

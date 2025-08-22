@@ -333,11 +333,25 @@ export class PDFManager {
             opacity: 0.4;
             border: 3px solid ${highlightColor};
             border-radius: 6px;
-            pointer-events: none;
+            pointer-events: auto;
+            cursor: pointer;
             z-index: 10;
             transition: all 0.2s ease;
             box-shadow: 0 0 8px rgba(0,0,0,0.3);
         `;
+        
+        // Add click event to highlight
+        highlight.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Trigger tag selection in the tag panel
+            if (this.onHighlightClick) {
+                this.onHighlightClick(tag.id, tag.category);
+            }
+            
+            console.log('PDF 하이라이트 클릭:', tag.name, tag.category);
+        });
         
         // Create label text - include function for instruments
         let labelText = tag.name;
