@@ -15,9 +15,12 @@ This is a web application for processing P&ID (Piping & Instrumentation Diagram)
 The system follows a client-heavy web architecture with local data persistence:
 
 ### Frontend (Web Application)
-- **PDF Processing**: PDF.js for rendering and text extraction
-- **Tag Recognition**: User-defined regex patterns with real-time testing capability
+- **PDF Processing**: PDF.js for rendering, text extraction with positional data
+- **Visual System**: Canvas-based overlay for tag highlighting and selection feedback
+- **Tag Recognition**: User-defined regex patterns + spatial analysis for instruments
 - **Pattern Management**: UI for creating, editing, and testing custom regex patterns
+- **Real-time Synchronization**: Tag panel ↔ PDF highlighting integration
+- **Page Management**: Current page filtering and automatic navigation
 - **Relationship Mapping**: Hotkey-driven UI (`R` for connections, `I` for installations)  
 - **Data Export**: SheetJS/ExcelJS for Excel generation
 - **Storage**: Browser LocalStorage + IndexedDB for project persistence
@@ -25,12 +28,16 @@ The system follows a client-heavy web architecture with local data persistence:
 ### Core Components Structure
 ```
 ├── PDF Viewer (left panel)
-│   ├── PDF rendering with zoom/pan
-│   ├── Tag highlighting overlay
-│   └── Relationship visualization
+│   ├── PDF rendering with zoom/pan/page navigation
+│   ├── Real-time tag highlighting overlay system
+│   ├── Color-coded tag categories (Equipment/Line/Instrument)
+│   ├── Selected tag visual feedback with animations
+│   └── Function+Number labels for instruments
 └── Tag Panel (right panel)
-    ├── Equipment/Line/Instrument tabs
-    ├── Auto-recognized tag list
+    ├── Equipment/Line/Instrument tabs with counters
+    ├── Current page tag filtering
+    ├── Auto-recognized tag list with position data
+    ├── Tag selection synchronization with PDF
     └── Search/filter functionality
 ```
 
@@ -46,10 +53,28 @@ The system follows a client-heavy web architecture with local data persistence:
 
 ## Key User Workflows
 
-1. **PDF Upload** → Automatic tag recognition via text pattern matching
-2. **Tag Review** → Manual addition/correction of missed tags
-3. **Relationship Mapping** → Hotkey mode entry + tag clicking sequence
-4. **Export** → Generate Excel with 3 separate sheets
+1. **PDF Upload** → Automatic tag recognition via pattern matching + spatial analysis
+2. **Visual Review** → Tags highlighted on PDF with color coding and labels
+3. **Page Navigation** → Current page tag filtering, automatic tag-to-page navigation
+4. **Tag Selection** → Click tag in panel → visual feedback in PDF with animations
+5. **Tag Review** → Manual addition/correction of missed tags
+6. **Relationship Mapping** → Hotkey mode entry + tag clicking sequence
+7. **Export** → Generate Excel with 3 separate sheets
+
+## Current Implementation Features
+
+### PDF Highlighting System
+- Real-time tag overlay on PDF canvas
+- Color-coded categories: Equipment (green), Line (yellow), Instrument (blue)
+- Enhanced visibility: padding, borders, shadows, animations
+- Selected tag feedback: scaling, glowing, pulse animation
+- Function+Number labels for instruments (e.g., "FT: 101")
+
+### Page-based Tag Management
+- Current page tag filtering in right panel
+- Page counter display (current/total tags)
+- Automatic page navigation when selecting tags from other pages
+- Visual indicators for current page tags
 
 ## Performance Requirements
 
@@ -60,9 +85,26 @@ The system follows a client-heavy web architecture with local data persistence:
 
 ## Development Phases
 
-**MVP (Phase 1)**: PDF viewer, basic tag recognition, hotkey mapping, Excel export, local storage
-**Enhancement (Phase 2)**: Advanced recognition patterns, batch processing, templates
-**Team Features (Phase 3)**: Multi-user support, cloud storage, collaboration
+**✅ MVP (Phase 1 - COMPLETED)**: 
+- PDF viewer with highlighting system
+- User-defined regex pattern recognition
+- Spatial analysis for instrument matching
+- Real-time tag visualization and selection
+- Page-based tag filtering and navigation
+- Hotkey relationship mapping
+- Excel export with multiple sheets
+- Local storage and auto-save
+
+**🔄 Enhancement (Phase 2)**: 
+- Advanced recognition patterns and templates
+- Batch processing capabilities
+- Pattern sharing and import/export
+- Performance optimizations
+
+**📋 Team Features (Phase 3)**: 
+- Multi-user support and collaboration
+- Cloud storage integration
+- Project sharing and version control
 
 ## Technical Constraints
 

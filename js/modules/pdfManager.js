@@ -46,6 +46,11 @@ export class PDFManager {
             this.canvas.width = viewport.width;
             this.canvas.height = viewport.height;
             
+            // Update overlay size to match canvas
+            const overlay = document.getElementById('pdf-overlay');
+            overlay.style.width = viewport.width + 'px';
+            overlay.style.height = viewport.height + 'px';
+            
             // Clear canvas
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             
@@ -59,6 +64,11 @@ export class PDFManager {
             
             // Update zoom level display
             document.getElementById('zoom-level').textContent = `${Math.round(this.scale * 100)}%`;
+            
+            // Notify that page has been rendered (for tag highlights)
+            if (this.onPageRendered) {
+                this.onPageRendered();
+            }
             
         } catch (error) {
             console.error('페이지 렌더링 실패:', error);
@@ -258,6 +268,169 @@ export class PDFManager {
 
     // Clear all highlights and re-render
     clearHighlights() {
+        this.clearOverlay();
         this.renderPage();
+    }
+
+    // Add overlay management methods
+    clearOverlay() {
+        const overlay = document.getElementById('pdf-overlay');
+        overlay.innerHTML = '';
+    }
+
+    // Add highlight overlay on PDF
+    addTagHighlight(tag, color = null) {
+        if (!tag.position || !this.currentPDF) return;
+
+        const { x, y, width, height, page } = tag.position;
+        
+        // Only show highlights for current page
+        if (page !== this.currentPage) return;
+
+        const overlay = document.getElementById('pdf-overlay');
+        const canvas = document.getElementById('pdf-canvas');
+        
+        // Calculate scaled position with expanded area for better visibility
+        const padding = 2; // Add padding around the text
+        const scaledX = (x - padding) * this.scale;
+        const scaledY = (y - padding) * this.scale;
+        const scaledWidth = (width + padding * 2) * this.scale;
+        const scaledHeight = (height + padding * 2) * this.scale;
+        
+        // Create highlight element
+        const highlight = document.createElement('div');
+        highlight.className = 'tag-highlight';
+        highlight.dataset.tagId = tag.id;
+        highlight.dataset.tagCategory = tag.category;
+        
+        // Determine highlight color
+        const highlightColor = color || tag.patternColor || this.getCategoryColor(tag.category);
+        
+        highlight.style.cssText = `
+            position: absolute;
+            left: ${scaledX}px;
+            top: ${scaledY}px;
+            width: ${scaledWidth}px;
+            height: ${scaledHeight}px;
+            background-color: ${highlightColor};
+            opacity: 0.4;
+            border: 3px solid ${highlightColor};
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 10;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        `;
+        
+        // Create label text - include function for instruments
+        let labelText = tag.name;
+        if (tag.category === 'instrument' && tag.function) {
+            labelText = `${tag.function}: ${tag.name}`;
+        }
+        
+        // Add tag name label with improved visibility
+        const label = document.createElement('div');
+        label.className = 'tag-label';
+        label.textContent = labelText;
+        label.style.cssText = `
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: ${highlightColor};
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.3);
+            z-index: 12;
+        `;
+        
+        // Add arrow pointing to the tag
+        const arrow = document.createElement('div');
+        arrow.className = 'tag-arrow';
+        arrow.style.cssText = `
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid ${highlightColor};
+            z-index: 11;
+        `;
+        
+        label.appendChild(arrow);
+        highlight.appendChild(label);
+        overlay.appendChild(highlight);
+    }
+
+    // Highlight selected tag
+    highlightSelectedTag(tagId) {
+        // Remove previous selection highlights
+        document.querySelectorAll('.tag-highlight.selected').forEach(el => {
+            el.classList.remove('selected');
+            el.style.opacity = '0.4';
+            el.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
+            el.style.borderWidth = '3px';
+            el.style.transform = 'scale(1)';
+        });
+        
+        // If tagId is null, just clear highlights
+        if (!tagId) return;
+        
+        // Highlight selected tag with enhanced visibility
+        const highlight = document.querySelector(`[data-tag-id="${tagId}"]`);
+        if (highlight) {
+            highlight.classList.add('selected');
+            highlight.style.opacity = '0.8';
+            highlight.style.boxShadow = '0 0 20px rgba(255, 255, 255, 1), 0 0 40px rgba(255, 255, 255, 0.5)';
+            highlight.style.borderWidth = '4px';
+            highlight.style.transform = 'scale(1.1)';
+            
+            // Make the label more prominent for selected tag
+            const label = highlight.querySelector('.tag-label');
+            if (label) {
+                label.style.backgroundColor = '#ff4444';
+                label.style.fontSize = '12px';
+                label.style.padding = '6px 10px';
+                label.style.fontWeight = '900';
+                label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+            }
+        }
+    }
+
+    // Get default color for category
+    getCategoryColor(category) {
+        const colors = {
+            equipment: '#28a745',  // Green
+            line: '#ffc107',       // Yellow
+            instrument: '#007bff'  // Blue
+        };
+        return colors[category] || '#6c757d';
+    }
+
+    // Update overlay when page changes
+    updateTagHighlights(allTags) {
+        this.clearOverlay();
+        
+        // Show highlights for current page only
+        Object.values(allTags).flat().forEach(tag => {
+            if (tag.position && tag.position.page === this.currentPage) {
+                this.addTagHighlight(tag);
+            }
+        });
+    }
+
+    // Refresh highlights when scale changes
+    refreshHighlights(allTags) {
+        if (allTags) {
+            this.updateTagHighlights(allTags);
+        }
     }
 }

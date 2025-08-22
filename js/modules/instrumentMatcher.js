@@ -43,7 +43,16 @@ export class InstrumentMatcher {
                 numberPosition: instrumentNum,
                 functionPosition: functionText ? this.findFunctionPosition(textWithPositions, functionText, instrumentNum) : null,
                 patternName: 'Instrument_number',
-                created: new Date().toISOString()
+                created: new Date().toISOString(),
+                // Add position information for PDF highlighting
+                position: {
+                    x: instrumentNum.x,
+                    y: instrumentNum.y,
+                    width: instrumentNum.width,
+                    height: instrumentNum.height,
+                    page: instrumentNum.page,
+                    bbox: instrumentNum.bbox
+                }
             };
 
             instrumentTags.push(instrumentTag);

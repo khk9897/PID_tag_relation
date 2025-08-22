@@ -54,10 +54,12 @@ class PIDApp {
 
         document.getElementById('prev-page').addEventListener('click', () => {
             this.pdfManager.previousPage();
+            this.updateTagListsForCurrentPage();
         });
 
         document.getElementById('next-page').addEventListener('click', () => {
             this.pdfManager.nextPage();
+            this.updateTagListsForCurrentPage();
         });
 
         // Project Management
@@ -162,6 +164,14 @@ class PIDApp {
             // Load PDF
             await this.pdfManager.loadPDF(file);
             
+            // Set up page render callback for tag highlights
+            this.pdfManager.onPageRendered = () => {
+                if (this.currentProject && this.currentProject.tags) {
+                    this.pdfManager.refreshHighlights(this.currentProject.tags);
+                    this.updateTagListsForCurrentPage();
+                }
+            };
+            
             // Initialize new project
             this.currentProject = {
                 name: file.name.replace('.pdf', ''),
@@ -221,6 +231,7 @@ class PIDApp {
     clearSelection() {
         this.selectedTags = [];
         this.clearTagHighlights();
+        this.pdfManager.highlightSelectedTag(null);
     }
 
     clearTagHighlights() {
@@ -274,8 +285,12 @@ class PIDApp {
             this.currentProject.tags = recognizedTags;
             this.currentProject.modified = new Date().toISOString();
             
-            // Update UI
+            // Update UI with page filtering
             this.updateTagLists();
+            this.updateTagListsForCurrentPage();
+            
+            // Update PDF highlights
+            this.pdfManager.updateTagHighlights(recognizedTags);
             
             // Auto-save
             this.autoSave();
@@ -303,6 +318,62 @@ class PIDApp {
                 const item = this.createTagItem(tag, type, index);
                 container.appendChild(item);
             });
+        });
+    }
+
+    updateTagListsForCurrentPage() {
+        if (!this.pdfManager.currentPage || !this.currentProject) return;
+        
+        const currentPage = this.pdfManager.currentPage;
+        
+        ['equipment', 'line', 'instrument'].forEach(type => {
+            const container = document.getElementById(`${type}-tags`);
+            const items = container.querySelectorAll('.tag-item');
+            
+            items.forEach(item => {
+                const index = parseInt(item.dataset.index);
+                const tag = this.currentProject.tags[type][index];
+                
+                // Show only tags from current page
+                if (tag.position && tag.position.page === currentPage) {
+                    item.style.display = 'flex';
+                    item.classList.add('current-page');
+                } else if (tag.position) {
+                    item.style.display = 'none';
+                    item.classList.remove('current-page');
+                } else {
+                    // Manual tags without position - show on all pages
+                    item.style.display = 'flex';
+                    item.classList.remove('current-page');
+                }
+            });
+        });
+
+        // Update page counters
+        this.updatePageTagCounters();
+    }
+
+    updatePageTagCounters() {
+        if (!this.currentProject || !this.pdfManager.currentPage) return;
+        
+        const currentPage = this.pdfManager.currentPage;
+        const counters = {
+            equipment: 0,
+            line: 0,
+            instrument: 0
+        };
+
+        ['equipment', 'line', 'instrument'].forEach(type => {
+            counters[type] = this.currentProject.tags[type].filter(tag => 
+                tag.position && tag.position.page === currentPage
+            ).length;
+            
+            // Update header counters
+            const header = document.querySelector(`#${type}-list .tag-list-header h3`);
+            if (header) {
+                const baseText = header.textContent.split('(')[0].trim();
+                header.textContent = `${baseText} (${counters[type]}/${this.currentProject.tags[type].length})`;
+            }
         });
     }
 
@@ -345,9 +416,17 @@ class PIDApp {
 
     handleTagClick(tag, type, element) {
         if (this.mappingMode === 'normal') {
-            // Normal mode - just highlight
+            // Normal mode - highlight tag in both panel and PDF
             this.clearTagHighlights();
             element.classList.add('selected');
+            
+            // Highlight in PDF if tag has position
+            if (tag.position && this.pdfManager.currentPage === tag.position.page) {
+                this.pdfManager.highlightSelectedTag(tag.id);
+            } else if (tag.position && this.pdfManager.currentPage !== tag.position.page) {
+                // Navigate to tag's page
+                this.pdfManager.goToPage(tag.position.page);
+            }
             return;
         }
 
@@ -356,6 +435,11 @@ class PIDApp {
             // First tag selection
             this.selectedTags.push({ tag, type, element });
             element.classList.add('selected');
+            
+            // Highlight in PDF
+            if (tag.position && this.pdfManager.currentPage === tag.position.page) {
+                this.pdfManager.highlightSelectedTag(tag.id);
+            }
         } else if (this.selectedTags.length === 1) {
             // Second tag selection - create relationship
             const firstTag = this.selectedTags[0];
@@ -364,6 +448,7 @@ class PIDApp {
                 // Same tag - deselect
                 firstTag.element.classList.remove('selected');
                 this.selectedTags = [];
+                this.pdfManager.highlightSelectedTag(null); // Clear PDF highlight
                 return;
             }
 

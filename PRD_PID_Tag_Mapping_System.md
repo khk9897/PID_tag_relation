@@ -17,12 +17,18 @@ Searchable PDF P&ID에서 equipment, line, instrument 태그를 자동 인식하
 - **처리 규모**: 페이지당 50~100개 태그
 - **지원 기능**: PDF 뷰어, 줌/팬, 텍스트 검색
 
-### 2.2 태그 인식 및 관리
+### 2.2 태그 인식 및 시각화 시스템
 - **사용자 정의 정규식**: 사용자가 직접 입력하는 정규식 패턴으로 태그 인식
+- **공간 분석 매칭**: Instrument 태그는 Number와 Function의 위치 관계로 인식
 - **패턴 테스트**: 정규식 패턴을 실시간으로 테스트할 수 있는 기능
+- **실시간 PDF 하이라이트**: 인식된 태그들이 PDF 위에 색상별로 시각화
+  - Equipment: 녹색 하이라이트
+  - Line: 노란색 하이라이트  
+  - Instrument: 파란색 하이라이트 (Function: Number 형식 라벨)
+- **페이지별 태그 필터링**: 현재 페이지의 태그만 우측 패널에 표시
+- **태그 선택 동기화**: 패널에서 태그 선택 시 PDF에서 시각적 강조
 - **자동 태그 인식**: PDF 텍스트 추출 + 사용자 정의 패턴 매칭
 - **수동 태그 지정**: 자동 인식 실패 시 사용자 직접 영역 선택
-- **태그 유형**: Equipment, Line, Instrument (사용자 정의 패턴별)
 
 ### 2.3 관계 매핑 시스템
 - **핫키 기반 매핑**:
@@ -102,23 +108,29 @@ Searchable PDF P&ID에서 equipment, line, instrument 태그를 자동 인식하
 - **응답 시간**: 태그 인식 < 5초, 관계 매핑 실시간
 - **파일 크기**: 최대 50MB PDF 파일 지원
 
-### 5.3 기술 스택 고려사항
-- **Frontend**: React/Vue.js + PDF.js
-- **Backend**: Node.js/Python (PDF 텍스트 추출)
-- **Storage**: 로컬 스토리지 + IndexedDB
-- **Export**: SheetJS/ExcelJS
+### 5.3 구현된 기술 스택
+- **Frontend**: Vanilla JavaScript ES6+ (모듈화된 클래스 구조)
+- **PDF Processing**: PDF.js + Canvas API (하이라이트 오버레이)
+- **패턴 인식**: 정규식 + 공간 분석 알고리즘
+- **Storage**: LocalStorage + IndexedDB
+- **Export**: SheetJS (XLSX)
+- **UI**: CSS3 (Grid, Flexbox, 애니메이션)
 
 ## 6. MVP 범위
 
-### 6.1 Phase 1 (MVP)
+### 6.1 Phase 1 (MVP) ✅ COMPLETED
 - [x] PDF 뷰어 및 기본 조작
-- [ ] 사용자 정의 정규식 패턴 시스템
-- [ ] 패턴 설정 UI 및 테스트 기능
-- [ ] 자동 태그 인식 (사용자 정의 패턴)
-- [ ] 수동 태그 지정
+- [x] 실시간 PDF 태그 하이라이트 시스템
+- [x] 페이지별 태그 필터링 및 네비게이션
+- [x] 태그 선택 동기화 (패널 ↔ PDF)
+- [x] 사용자 정의 정규식 패턴 시스템
+- [x] 패턴 설정 UI 및 실시간 테스트 기능
+- [x] 공간 분석 기반 Instrument 태그 인식
+- [x] 자동 태그 인식 (사용자 정의 패턴 + 위치 분석)
+- [x] 수동 태그 지정
 - [x] 핫키 기반 관계 매핑 (연결/설치)
-- [x] 기본 Excel 출력 (3개 시트)
-- [x] 로컬 저장/불러오기
+- [x] Excel 출력 (Equipment/Line/Instrument 시트)
+- [x] 로컬 저장/불러오기 및 자동 저장
 
 ### 6.2 Phase 2 (Enhancement)
 - [ ] 고급 태그 인식 패턴

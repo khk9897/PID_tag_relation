@@ -9,7 +9,11 @@
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(git reset:*)",
-      "Bash(gh repo create:*)"
+      "Bash(gh repo create:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git remote remove:*)"
     ],
     "deny": []
   }
