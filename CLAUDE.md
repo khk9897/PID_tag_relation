@@ -56,19 +56,21 @@ The system follows a client-heavy web architecture with local data persistence:
 1. **PDF Upload** → Automatic tag recognition via pattern matching + spatial analysis
 2. **Visual Review** → Tags highlighted on PDF with color coding and labels
 3. **Page Navigation** → Current page tag filtering, automatic tag-to-page navigation
-4. **Tag Selection** → Click tag in panel → visual feedback in PDF with animations
-5. **Tag Review** → Manual addition/correction of missed tags
+4. **Tag Selection** → Bidirectional selection between tag panel and PDF highlights
+5. **Tag Review** → Manual addition/correction of missed tags with reset functionality
 6. **Relationship Mapping** → Hotkey mode entry + tag clicking sequence
 7. **Export** → Generate Excel with 3 separate sheets
 
 ## Current Implementation Features
 
 ### PDF Highlighting System
-- Real-time tag overlay on PDF canvas
+- Real-time tag overlay on PDF canvas with zoom-responsive positioning
 - Color-coded categories: Equipment (green), Line (yellow), Instrument (blue)
 - Enhanced visibility: padding, borders, shadows, animations
-- Selected tag feedback: scaling, glowing, pulse animation
-- Function+Number labels for instruments (e.g., "FT: 101")
+- Selected tag feedback: scaling, glowing, pulse animation with proper color restoration
+- Bidirectional selection: Click PDF highlights → select corresponding tag in panel
+- Function+Number labels for instruments (e.g., "PT-1234")
+- Smart positioning that adapts to zoom level changes
 
 ### Page-based Tag Management
 - Current page tag filtering in right panel
@@ -86,14 +88,14 @@ The system follows a client-heavy web architecture with local data persistence:
 ## Development Phases
 
 **✅ MVP (Phase 1 - COMPLETED)**: 
-- PDF viewer with highlighting system
-- User-defined regex pattern recognition
-- Spatial analysis for instrument matching
-- Real-time tag visualization and selection
+- PDF viewer with zoom-responsive highlighting system
+- User-defined regex pattern recognition with pattern settings UI
+- Spatial analysis for instrument function matching (in progress)
+- Real-time bidirectional tag visualization and selection
 - Page-based tag filtering and navigation
-- Hotkey relationship mapping
+- Hotkey relationship mapping with visual feedback
 - Excel export with multiple sheets
-- Local storage and auto-save
+- Local storage with project reset functionality
 
 **🔄 Enhancement (Phase 2)**: 
 - Advanced recognition patterns and templates
@@ -106,9 +108,24 @@ The system follows a client-heavy web architecture with local data persistence:
 - Cloud storage integration
 - Project sharing and version control
 
+## Recent Development Notes
+
+### Known Issues & Improvements Needed
+- **Instrument Function Matching**: Spatial analysis for matching function codes (PT, FT, etc.) with instrument numbers needs refinement
+- **Pattern Settings**: All event listeners now properly connected, modal functionality restored
+- **PDF Highlighting**: Zoom-responsive positioning and color restoration working correctly
+- **Bidirectional Selection**: PDF highlight clicks properly select corresponding tags in panel
+
+### Testing Requirements
+- Test instrument function matching with various PDF layouts
+- Verify pattern settings functionality across different browsers
+- Validate zoom behavior with complex tag layouts
+- Test project reset and data persistence
+
 ## Technical Constraints
 
 - Browser-only application (Chrome, Edge, Firefox)
 - Vector-based PDFs only (no scanned images)
 - No standard P&ID format - must handle various tag naming conventions
 - Local storage only (no server/cloud in MVP)
+- Instrument function matching relies on spatial proximity algorithms
