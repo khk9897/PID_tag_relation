@@ -365,11 +365,8 @@ export class PDFManager {
             console.log('PDF 하이라이트 클릭:', tag.name, tag.category);
         });
         
-        // Create label text - include function for instruments
+        // Create label text - use name directly (already includes function for instruments)
         let labelText = tag.name;
-        if (tag.category === 'instrument' && tag.function) {
-            labelText = `${tag.function}: ${tag.name}`;
-        }
         
         // Add tag name label with improved visibility
         const label = document.createElement('div');

@@ -33,9 +33,13 @@ export class InstrumentMatcher {
             );
             
             // Create combined instrument tag
+            console.log(`Instrument ${instrumentNum.text}의 함수: '${functionText}'`);
+            const combinedName = functionText ? `${functionText}-${instrumentNum.text}` : instrumentNum.text;
+            console.log(`Combined name: ${combinedName}`);
             const instrumentTag = {
                 id: `instrument_${instrumentNum.text}_${Date.now()}`,
-                name: instrumentNum.text,
+                name: combinedName,
+                number: instrumentNum.text,
                 function: functionText || '',
                 type: this.getInstrumentType(functionText),
                 category: 'instrument',
@@ -81,27 +85,51 @@ export class InstrumentMatcher {
         const searchY1 = y - searchHeight;
         const searchY2 = y;
 
+        console.log(`Instrument ${instrumentNumber.text}의 함수 검색:`, {
+            position: { x, y, width, page },
+            searchArea: { searchY1, searchY2 },
+            functionPattern: functionPattern.pattern
+        });
+
         // Find all function texts in the search area
         const candidateFunctions = textWithPositions.filter(item => {
             // Must be on the same page
             if (item.page !== page) return false;
             
             // Must match function pattern
-            if (!this.patternManager.testPattern(functionPattern.pattern, item.text)) return false;
+            const matches = this.patternManager.testPattern(functionPattern.pattern, item.text);
+            if (!matches) return false;
             
             // Must be above the instrument number (smaller y value in top-down coordinates)
             if (item.y >= searchY2 || item.y <= searchY1) return false;
             
-            // Must be horizontally aligned (center of function within instrument number width)
+            // Accept all functions in the vertical range - we'll find the closest one later
             const functionCenterX = item.x + item.width / 2;
-            return functionCenterX >= x && functionCenterX <= x + width;
-        });
-
-        // Return the closest function (highest y value = closest to instrument number)
-        if (candidateFunctions.length > 0) {
-            const closestFunction = candidateFunctions.reduce((closest, current) => {
-                return current.y > closest.y ? current : closest;
+            const instrumentCenterX = x + width / 2;
+            const distance = Math.abs(functionCenterX - instrumentCenterX);
+            const isAligned = true; // Accept all, filter by distance later
+            
+            console.log(`후보 함수 '${item.text}':`, {
+                position: { x: item.x, y: item.y, width: item.width },
+                matches, isAligned,
+                functionCenterX, instrumentCenterX,
+                distance
             });
+            
+            return isAligned;
+        });
+        
+        console.log(`찾은 후보 함수들:`, candidateFunctions.map(f => f.text));
+
+        // Return the closest function by horizontal distance
+        if (candidateFunctions.length > 0) {
+            const instrumentCenterX = x + width / 2;
+            const closestFunction = candidateFunctions.reduce((closest, current) => {
+                const closestDistance = Math.abs((closest.x + closest.width / 2) - instrumentCenterX);
+                const currentDistance = Math.abs((current.x + current.width / 2) - instrumentCenterX);
+                return currentDistance < closestDistance ? current : closest;
+            });
+            console.log(`선택된 함수: ${closestFunction.text} (거리: ${Math.abs((closestFunction.x + closestFunction.width / 2) - instrumentCenterX)})`);
             return closestFunction.text;
         }
 

@@ -78,6 +78,38 @@ class PIDApp {
             this.pdfManager.nextPage();
             this.updateTagListsForCurrentPage();
         });
+
+        // 프로젝트 관리 이벤트
+        document.getElementById('save-btn').addEventListener('click', () => {
+            this.saveProject();
+        });
+
+        document.getElementById('load-btn').addEventListener('click', () => {
+            this.loadProject();
+        });
+
+        document.getElementById('export-btn').addEventListener('click', () => {
+            this.exportToExcel();
+        });
+
+        // 자동 인식 및 패턴 설정 이벤트
+        document.getElementById('auto-recognize').addEventListener('click', () => {
+            this.autoRecognizeTags();
+        });
+
+        document.getElementById('pattern-settings').addEventListener('click', () => {
+            console.log('패턴 설정 버튼 클릭');
+            try {
+                this.openPatternModal();
+            } catch (error) {
+                console.error('패턴 모달 열기 오류:', error);
+            }
+        });
+
+        // 태그 검색 이벤트
+        document.getElementById('tag-search').addEventListener('input', (e) => {
+            this.filterTags(e.target.value);
+        });
     }
 
     // 프로젝트 및 저장 데이터 초기화
@@ -516,16 +548,15 @@ class PIDApp {
         let tagDetails = tag.spec || '';
         
         // Special handling for instrument tags with functions
-        if (type === 'instrument' && tag.function) {
-            tagInfo = `${tag.function} - ${tag.type}`;
-            tagDetails = `Function: ${tag.function}`;
+        if (type === 'instrument') {
+            tagInfo = tag.type || '';
+            tagDetails = tag.function ? `Function: ${tag.function}` : '';
         }
 
         li.innerHTML = `
             <div>
                 <div class="tag-name">${tag.name}</div>
                 <div class="tag-info">${tagInfo} ${tagDetails}</div>
-                ${tag.function ? `<div class="tag-function">${tag.function}</div>` : ''}
             </div>
             <div class="tag-actions">
                 <button class="btn btn-sm btn-danger" onclick="app.deleteTag('${type}', ${index})">삭제</button>
