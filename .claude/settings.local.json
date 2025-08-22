@@ -8,7 +8,8 @@
       "Bash(npx http-server:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(gh repo create:*)"
     ],
     "deny": []
   }
