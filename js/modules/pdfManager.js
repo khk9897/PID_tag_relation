@@ -152,6 +152,10 @@ export class PDFManager {
         if (this.scale < this.maxScale) {
             this.scale += 0.2;
             this.renderPage();
+            // 하이라이트 위치 업데이트
+            if (this.onPageRendered) {
+                this.onPageRendered();
+            }
         }
     }
 
@@ -159,6 +163,10 @@ export class PDFManager {
         if (this.scale > this.minScale) {
             this.scale -= 0.2;
             this.renderPage();
+            // 하이라이트 위치 업데이트
+            if (this.onPageRendered) {
+                this.onPageRendered();
+            }
         }
     }
 
@@ -177,6 +185,10 @@ export class PDFManager {
             
             this.scale = Math.min(scaleX, scaleY);
             this.renderPage();
+            // 하이라이트 위치 업데이트
+            if (this.onPageRendered) {
+                this.onPageRendered();
+            }
         });
     }
 
@@ -409,25 +421,39 @@ export class PDFManager {
             const category = el.dataset.tagCategory;
             const isLine = category === 'line';
             
-            // Restore default styling for all categories
-            el.style.opacity = '0.4';
-            el.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
-            el.style.borderWidth = '3px';
-            el.style.transform = 'scale(1)';
-            el.style.animation = 'none';
-            el.style.zIndex = '10';
+            // Restore default styling for all categories - 완전히 원래 상태로 복원
+            // 먼저 모든 스타일 속성을 완전히 제거
+            el.style.opacity = '';
+            el.style.boxShadow = '';
+            el.style.borderWidth = '';
+            el.style.transform = '';
+            el.style.animation = '';
+            el.style.zIndex = '';
             el.style.background = '';
-            el.style.backgroundSize = 'auto';
-            el.style.borderImage = 'none';
-            el.style.borderStyle = 'solid';
-            el.style.outline = 'none';
-            el.style.outlineOffset = '0px';
-            el.style.filter = 'none';
+            el.style.backgroundColor = '';
+            el.style.backgroundSize = '';
+            el.style.borderImage = '';
+            el.style.borderStyle = '';
+            el.style.borderColor = '';
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+            el.style.filter = '';
+            
+            // 기본 스타일 재적용
+            const originalColor = this.getCategoryColor(category);
+            el.style.opacity = '0.4';
+            el.style.backgroundColor = originalColor;
+            el.style.border = `3px solid ${originalColor}`;
+            el.style.borderRadius = '6px';
+            el.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
+            el.style.zIndex = '10';
             
             // Reset label styling for all categories
             const label = el.querySelector('.tag-label');
             if (label) {
-                // Reset to default label styling
+                // Reset to default label styling with original color
+                const originalColor = this.getCategoryColor(category);
+                label.style.backgroundColor = originalColor;
                 label.style.fontSize = '11px';
                 label.style.padding = '4px 8px';
                 label.style.fontWeight = 'bold';

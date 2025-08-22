@@ -24,6 +24,11 @@ class PIDApp {
             this.selectTagFromPDF(tagId, tagCategory);
         };
         
+        // Set up PDF page rendering callback for highlight updates
+        this.pdfManager.onPageRendered = () => {
+            this.updateTagListsForCurrentPage();
+        };
+        
         this.init();
     }
 
@@ -49,6 +54,19 @@ class PIDApp {
             if (confirm('모든 태그, 관계, 저장 데이터를 초기화하시겠습니까?')) {
                 this.resetProject();
             }
+        });
+
+        // PDF 컨트롤 이벤트
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            this.pdfManager.zoomIn();
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            this.pdfManager.zoomOut();
+        });
+
+        document.getElementById('zoom-fit').addEventListener('click', () => {
+            this.pdfManager.fitToScreen();
         });
 
         // PDF 페이지 넘김 버튼 이벤트
@@ -127,23 +145,34 @@ class PIDApp {
         // 해당 카테고리의 탭을 활성화
         this.switchToTab(tagCategory);
         
-        // 태그 목록에서 해당 태그를 찾아서 클릭 이벤트 트리거
-        const tagElement = document.querySelector(`[data-tag-id="${CSS.escape(tagId)}"]`);
+        // 기존 선택 해제
+        this.clearTagHighlights();
+        
+        // PDF에서 태그 하이라이트
+        this.pdfManager.highlightSelectedTag(tagId);
+        
+        // 태그 목록에서 해당 태그를 찾아서 선택 표시
+        console.log('태그 ID로 검색:', tagId);
+        
+        // 오른쪽 패널의 태그 아이템 찾기 (PDF 하이라이트가 아닌)
+        let tagElement = null;
+        
+        // 모든 태그 아이템을 검사해서 직접 찾기
+        const allTagItems = document.querySelectorAll('.tag-item');
+        for (const item of allTagItems) {
+            if (item.dataset.tagId === tagId || item.dataset.id === tagId) {
+                tagElement = item;
+                break;
+            }
+        }
+        
+        console.log('찾은 태그 엘리먼트:', tagElement);
+        
         if (tagElement) {
-            // 기존 선택 해제
-            document.querySelectorAll('.tag-item.selected').forEach(el => {
-                el.classList.remove('selected');
-            });
-            
-            // 새 태그 선택
             tagElement.classList.add('selected');
             tagElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // 태그 클릭 핸들러 호출
-            const tag = this.findTagById(tagId);
-            if (tag) {
-                this.handleTagClick(tag, tagCategory);
-            }
+        } else {
+            console.log('태그 엘리먼트를 찾을 수 없습니다:', tagId);
         }
     }
 
@@ -324,9 +353,15 @@ class PIDApp {
     }
 
     clearTagHighlights() {
+        // 오른쪽 패널의 태그 선택 해제
         document.querySelectorAll('.tag-item.selected').forEach(item => {
             item.classList.remove('selected');
         });
+        
+        // PDF 하이라이트도 초기화 (선택된 하이라이트를 기본 상태로 복원)
+        if (this.pdfManager) {
+            this.pdfManager.highlightSelectedTag(null);
+        }
     }
 
     switchTagTab(tabName) {
@@ -510,7 +545,9 @@ class PIDApp {
         if (this.mappingMode === 'normal') {
             // Normal mode - highlight tag in both panel and PDF
             this.clearTagHighlights();
-            element.classList.add('selected');
+            if (element) {
+                element.classList.add('selected');
+            }
             
             // Highlight in PDF if tag has position
             if (tag.position && this.pdfManager.currentPage === tag.position.page) {
@@ -526,7 +563,9 @@ class PIDApp {
         if (this.selectedTags.length === 0) {
             // First tag selection
             this.selectedTags.push({ tag, type, element });
-            element.classList.add('selected');
+            if (element) {
+                element.classList.add('selected');
+            }
             
             // Highlight in PDF
             if (tag.position && this.pdfManager.currentPage === tag.position.page) {
