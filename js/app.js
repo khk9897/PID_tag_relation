@@ -243,7 +243,15 @@ class PIDApp {
         
         // 첫 번째 선택된 태그로 스크롤
         if (tagIds.length > 0) {
-            const firstTagElement = document.querySelector(`[data-tag-id="${tagIds[0]}"]`);
+            // Use direct dataset comparison to avoid CSS selector issues with special characters
+            const allTagItems = document.querySelectorAll('.tag-item');
+            let firstTagElement = null;
+            for (const item of allTagItems) {
+                if (item.dataset.tagId === tagIds[0] || item.dataset.id === tagIds[0]) {
+                    firstTagElement = item;
+                    break;
+                }
+            }
             if (firstTagElement) {
                 firstTagElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
