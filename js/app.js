@@ -227,13 +227,15 @@ class PIDApp {
             this.switchToTab(categories[0]);
         }
         
-        // 태그 패널에서 해당 태그들을 모두 선택 표시
-        this.clearTagHighlights();
+        // 태그 패널에서 해당 태그들을 모두 선택 표시 (PDF 다중 선택은 보존)
+        this.clearTagPanelSelections();
         
-        // PDF에서도 선택된 태그들을 하이라이트 (단일 선택 스타일로)
+        // PDF에서도 선택된 태그들을 하이라이트
         if (tagIds.length === 1) {
+            // 단일 선택 시에는 기존 단일 선택 스타일 사용
             this.pdfManager.highlightSelectedTag(tagIds[0]);
         }
+        // 다중 선택 시에는 PDF에서 이미 다중 선택 스타일이 적용되어 있으므로 그대로 유지
         
         tagIds.forEach(tagId => {
             // 모든 태그 아이템을 검사해서 찾기
@@ -495,6 +497,14 @@ class PIDApp {
         if (this.pdfManager) {
             this.pdfManager.highlightSelectedTag(null);
         }
+    }
+
+    // 태그 패널의 선택만 해제 (PDF 다중 선택은 보존)
+    clearTagPanelSelections() {
+        // 오른쪽 패널의 태그 선택만 해제
+        document.querySelectorAll('.tag-item.selected').forEach(item => {
+            item.classList.remove('selected');
+        });
     }
 
     switchTagTab(tabName) {
