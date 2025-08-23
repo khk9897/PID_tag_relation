@@ -1061,7 +1061,7 @@ class PIDApp {
         };
 
         this.currentProject.relationships.connections.push(connection);
-        this.updateRelationshipsList();
+        this.updateRelationshipLists();
         this.clearSelectedTags();
         this.autoSave();
         
@@ -1100,7 +1100,7 @@ class PIDApp {
             this.currentProject.relationships.installations.push(installation);
         });
 
-        this.updateRelationshipsList();
+        this.updateRelationshipLists();
         this.clearSelectedTags();
         this.autoSave();
         
