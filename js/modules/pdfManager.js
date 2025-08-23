@@ -765,22 +765,37 @@ export class PDFManager {
     // Add visual selection to tag
     addTagSelection(tagElement) {
         tagElement.classList.add('multi-selected');
-        tagElement.style.boxShadow = '0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4)';
+        // Apply strong visual feedback for multi-selection
+        tagElement.style.opacity = '0.85';
+        tagElement.style.boxShadow = '0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.8)';
         tagElement.style.borderColor = '#ff0000';
-        tagElement.style.borderWidth = '3px';
+        tagElement.style.borderWidth = '4px';
+        tagElement.style.borderStyle = 'solid';
+        tagElement.style.transform = 'scale(1.1)';
         tagElement.style.zIndex = '15';
+        
+        // Also enhance the label for multi-selected tags
+        const label = tagElement.querySelector('.tag-label');
+        if (label) {
+            label.style.backgroundColor = '#ff0000';
+            label.style.fontSize = '12px';
+            label.style.padding = '6px 10px';
+            label.style.fontWeight = '900';
+            label.style.border = '2px solid #fff';
+            label.style.boxShadow = '0 4px 12px rgba(255, 0, 0, 0.6)';
+            label.style.animation = 'labelBlink 1.5s ease-in-out infinite';
+        }
+        
+        console.log('다중 선택 시각적 효과 적용:', tagElement.dataset.tagId);
     }
 
     // Remove visual selection from tag
     removeTagSelection(tagElement) {
         tagElement.classList.remove('multi-selected');
-        const category = tagElement.dataset.tagCategory;
-        const originalColor = this.getCategoryColor(category);
+        // Restore default tag styling completely
+        this.restoreDefaultTagStyle(tagElement);
         
-        tagElement.style.boxShadow = '0 0 8px rgba(0,0,0,0.3)';
-        tagElement.style.borderColor = originalColor;
-        tagElement.style.borderWidth = '3px';
-        tagElement.style.zIndex = '10';
+        console.log('다중 선택 시각적 효과 제거:', tagElement.dataset.tagId);
     }
 
     // Clear all selections

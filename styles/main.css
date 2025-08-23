@@ -965,20 +965,25 @@ input:checked + .toggle-slider:before {
 /* Multi-selection Styles */
 .tag-highlight.multi-selected {
     border-color: #ff0000 !important;
-    border-width: 3px !important;
-    box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4) !important;
+    border-width: 4px !important;
+    border-style: solid !important;
+    opacity: 0.85 !important;
+    box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.8) !important;
     z-index: 15 !important;
-    animation: multiSelectPulse 2s ease-in-out infinite;
+    transform: scale(1.1) !important;
+    animation: multiSelectPulse 1.5s ease-in-out infinite !important;
 }
 
 @keyframes multiSelectPulse {
     0%, 100% {
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.4);
-        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.8);
+        transform: scale(1.08);
+        opacity: 0.8;
     }
     50% {
-        box-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 40px rgba(255, 0, 0, 0.6);
-        transform: scale(1.1);
+        box-shadow: 0 0 35px rgba(255, 0, 0, 1), 0 0 70px rgba(255, 0, 0, 0.9), 0 0 15px rgba(255, 255, 255, 1);
+        transform: scale(1.15);
+        opacity: 0.9;
     }
 }
 
