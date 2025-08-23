@@ -420,14 +420,27 @@ class PIDApp {
         // Tag tabs
         document.querySelectorAll('.tag-tabs .tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.switchTagTab(e.target.dataset.tab);
+                // Use closest() to ensure we get the button element, not child elements
+                const button = e.target.closest('.tab-btn');
+                const tabName = button ? button.dataset.tab : null;
+                if (tabName) {
+                    this.switchTagTab(tabName);
+                } else {
+                    console.error('Tab name not found for button:', e.target);
+                }
             });
         });
 
         // Relationship tabs
         document.querySelectorAll('.relationship-tabs .tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.switchRelationshipTab(e.target.dataset.relTab);
+                const button = e.target.closest('.tab-btn');
+                const tabName = button ? button.dataset.relTab : null;
+                if (tabName) {
+                    this.switchRelationshipTab(tabName);
+                } else {
+                    console.error('Relationship tab name not found for button:', e.target);
+                }
             });
         });
     }
@@ -540,13 +553,26 @@ class PIDApp {
         document.querySelectorAll('.tag-tabs .tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        // Find and activate the correct tab button
+        const tabButton = document.querySelector(`.tag-tabs [data-tab="${tabName}"]`);
+        if (tabButton) {
+            tabButton.classList.add('active');
+        } else {
+            console.error('Tab button not found for:', tabName);
+        }
 
         // Update content
         document.querySelectorAll('.tag-list').forEach(list => {
             list.classList.remove('active');
         });
-        document.getElementById(`${tabName}-list`).classList.add('active');
+        
+        const tabContent = document.getElementById(`${tabName}-list`);
+        if (tabContent) {
+            tabContent.classList.add('active');
+        } else {
+            console.error('Tab content not found for:', tabName);
+        }
     }
 
     switchRelationshipTab(tabName) {
