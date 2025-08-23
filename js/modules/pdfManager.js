@@ -764,29 +764,47 @@ export class PDFManager {
 
     // Add visual selection to tag
     addTagSelection(tagElement) {
+        console.log('다중 선택 시각적 효과 적용 시작:', tagElement.dataset.tagId, tagElement);
+        
         tagElement.classList.add('multi-selected');
-        // Apply strong visual feedback for multi-selection
-        tagElement.style.opacity = '0.85';
-        tagElement.style.boxShadow = '0 0 25px rgba(255, 0, 0, 1), 0 0 50px rgba(255, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.8)';
-        tagElement.style.borderColor = '#ff0000';
-        tagElement.style.borderWidth = '4px';
-        tagElement.style.borderStyle = 'solid';
-        tagElement.style.transform = 'scale(1.1)';
-        tagElement.style.zIndex = '15';
+        
+        // Force apply strong visual feedback with !important equivalent inline styles
+        tagElement.style.setProperty('opacity', '0.9', 'important');
+        tagElement.style.setProperty('box-shadow', '0 0 30px rgba(255, 0, 0, 1), 0 0 60px rgba(255, 0, 0, 0.8), 0 0 15px rgba(255, 255, 255, 1)', 'important');
+        tagElement.style.setProperty('border-color', '#ff0000', 'important');
+        tagElement.style.setProperty('border-width', '5px', 'important');
+        tagElement.style.setProperty('border-style', 'solid', 'important');
+        tagElement.style.setProperty('transform', 'scale(1.15)', 'important');
+        tagElement.style.setProperty('z-index', '20', 'important');
+        tagElement.style.setProperty('animation', 'multiSelectPulse 1.2s ease-in-out infinite', 'important');
+        
+        // Force background color for extra visibility
+        const category = tagElement.dataset.tagCategory;
+        if (category === 'line') {
+            tagElement.style.setProperty('background', 'linear-gradient(45deg, #ff0000, #ff4444, #ff6666)', 'important');
+        } else {
+            tagElement.style.setProperty('background-color', 'rgba(255, 0, 0, 0.3)', 'important');
+        }
         
         // Also enhance the label for multi-selected tags
         const label = tagElement.querySelector('.tag-label');
         if (label) {
-            label.style.backgroundColor = '#ff0000';
-            label.style.fontSize = '12px';
-            label.style.padding = '6px 10px';
-            label.style.fontWeight = '900';
-            label.style.border = '2px solid #fff';
-            label.style.boxShadow = '0 4px 12px rgba(255, 0, 0, 0.6)';
-            label.style.animation = 'labelBlink 1.5s ease-in-out infinite';
+            label.style.setProperty('background-color', '#ff0000', 'important');
+            label.style.setProperty('font-size', '13px', 'important');
+            label.style.setProperty('padding', '8px 12px', 'important');
+            label.style.setProperty('font-weight', '900', 'important');
+            label.style.setProperty('border', '3px solid #fff', 'important');
+            label.style.setProperty('box-shadow', '0 6px 15px rgba(255, 0, 0, 0.8)', 'important');
+            label.style.setProperty('animation', 'labelBlink 1.2s ease-in-out infinite', 'important');
         }
         
-        console.log('다중 선택 시각적 효과 적용:', tagElement.dataset.tagId);
+        console.log('다중 선택 시각적 효과 적용 완료. 현재 스타일:', {
+            opacity: tagElement.style.opacity,
+            borderColor: tagElement.style.borderColor,
+            borderWidth: tagElement.style.borderWidth,
+            transform: tagElement.style.transform,
+            boxShadow: tagElement.style.boxShadow
+        });
     }
 
     // Remove visual selection from tag
