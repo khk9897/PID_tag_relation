@@ -601,7 +601,7 @@ export class PDFManager {
         const tagCategory = tagElement.dataset.tagCategory;
         
         if (isCtrlClick) {
-            // Ctrl+click: toggle selection
+            // Ctrl+click: toggle selection - use multi-selection system
             if (this.selectedTags.has(tagId)) {
                 this.selectedTags.delete(tagId);
                 this.removeTagSelection(tagElement);
@@ -609,17 +609,21 @@ export class PDFManager {
                 this.selectedTags.add(tagId);
                 this.addTagSelection(tagElement);
             }
+            
+            // Notify app of multi-selection change
+            if (this.onMultipleTagsSelected) {
+                this.onMultipleTagsSelected(Array.from(this.selectedTags), [tagCategory]);
+            }
         } else {
-            // Regular click: single selection
+            // Regular click: single selection - use legacy system
             this.clearAllSelections();
             this.selectedTags.clear();
             this.selectedTags.add(tagId);
-            this.addTagSelection(tagElement);
-        }
-        
-        // Notify app of selection change
-        if (this.onMultipleTagsSelected) {
-            this.onMultipleTagsSelected(Array.from(this.selectedTags), tagCategory);
+            
+            // Use legacy single selection callback for better compatibility
+            if (this.onHighlightClick) {
+                this.onHighlightClick(tagId, tagCategory);
+            }
         }
     }
 

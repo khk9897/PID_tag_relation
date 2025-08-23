@@ -230,12 +230,18 @@ class PIDApp {
         // 태그 패널에서 해당 태그들을 모두 선택 표시
         this.clearTagHighlights();
         
+        // PDF에서도 선택된 태그들을 하이라이트 (단일 선택 스타일로)
+        if (tagIds.length === 1) {
+            this.pdfManager.highlightSelectedTag(tagIds[0]);
+        }
+        
         tagIds.forEach(tagId => {
             // 모든 태그 아이템을 검사해서 찾기
             const allTagItems = document.querySelectorAll('.tag-item');
             for (const item of allTagItems) {
                 if (item.dataset.tagId === tagId || item.dataset.id === tagId) {
                     item.classList.add('selected');
+                    console.log('태그 패널에서 선택 표시:', tagId, item);
                     break;
                 }
             }

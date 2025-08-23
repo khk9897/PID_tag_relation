@@ -23,7 +23,9 @@
       "Bash(echo:*)",
       "Bash(done)",
       "Bash(rm:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }
