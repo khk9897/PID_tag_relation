@@ -1,45 +1,66 @@
-// Pattern Manager - Handles user-defined regex patterns for tag recognition
+/**
+ * 패턴 관리자 클래스 - 태그 인식을 위한 사용자 정의 정규표현식 패턴을 처리합니다
+ * 
+ * 이 클래스는 P&ID 텍스트에서 다양한 유형의 태그를 인식하기 위한 정규표현식 패턴들을 관리합니다.
+ * 기본 패턴과 사용자 정의 패턴을 모두 지원하여 유연한 태그 인식이 가능합니다.
+ * 
+ * 주요 기능:
+ * - 기본 패턴 제공 (Line, Equipment, Instrument)
+ * - 사용자 커스텀 패턴 추가/수정/삭제
+ * - 패턴 활성/비활성 관리
+ * - 로컬스토리지에 패턴 영구 저장
+ * - 패턴 유효성 검증 및 테스트
+ */
 export class PatternManager {
     constructor() {
+        // 기본 제공 패턴들 - P&ID 업계의 일반적인 태그 명명 규칙에 기반
         this.defaultPatterns = {
             "Line_number": {
                 pattern: "^.+-[A-Z\\d]{1,4}-\\s?\\d{3,5}-[A-Z\\d]{3,7}$",
-                color: "#FFFF00", // Yellow
-                description: "Line number format (e.g., 100-PS-1234-A1B2)",
-                category: "line",
-                enabled: true
+                color: "#FFFF00",     // 노란색 - 라인 태그 하이라이트 색상
+                description: "라인 번호 형식 (100-PS-1234-A1B2 등)",
+                category: "line",       // 카테고리: 배관 라인
+                enabled: true           // 기본적으로 활성화
             },
             "Equipment_number": {
                 pattern: "^[A-Z\\d]+-[A-Z]{1,2}-\\d{4}$",
-                color: "#008000", // Green
-                description: "Equipment number format (e.g., V28-E-0003)",
-                category: "equipment",
-                enabled: true
+                color: "#008000",     // 녹색 - 장비 태그 하이라이트 색상
+                description: "장비 번호 형식 (V28-E-0003, P-101 등)",
+                category: "equipment",  // 카테고리: 공정 장비
+                enabled: true           // 기본적으로 활성화
             },
             "Instrument_number": {
                 pattern: "^\\d{4}\\s?[A-Za-z0-9-]{0,3}$",
-                color: "#FF0000", // Red
-                description: "Instrument number format (e.g., 1234)",
-                category: "instrument",
-                enabled: true
+                color: "#FF0000",     // 빨간색 - 계기 번호 하이라이트 색상
+                description: "계기 번호 형식 (1234, 2001A 등)",
+                category: "instrument", // 카테고리: 계측 계기
+                enabled: true           // 기본적으로 활성화
             },
             "Instrument_function": {
                 pattern: "^[A-Z]{2,4}$",
-                color: "#0000FF", // Blue
-                description: "Instrument function code (e.g., PT, TT, FT)",
-                category: "instrument",
-                enabled: true
+                color: "#0000FF",     // 파란색 - 계기 기능 하이라이트 색상
+                description: "계기 기능 코드 (PT, TT, FT, LIC 등)",
+                category: "instrument", // 카테곦0리: 계측 계기
+                enabled: true           // 기본적으로 활성화
             }
         };
 
+        // 사용자 정의 패턴들을 로컬스토리지에서 불러오기
         this.userPatterns = this.loadUserPatterns();
     }
 
-    // Get all active patterns (default + user patterns)
+    /**
+     * 활성화된 모든 패턴을 가져오는 메서드
+     * 기본 패턴과 사용자 정의 패턴을 합쳐서 활성화된 것들만 반환합니다.
+     * 
+     * @returns {Object} 활성화된 패턴들의 객체 (키: 패턴명, 값: 패턴 정보)
+     */
     getActivePatterns() {
+        // 기본 패턴과 사용자 패턴을 병합 (사용자 패턴이 기본 패턴을 오버라이드)
         const allPatterns = { ...this.defaultPatterns, ...this.userPatterns };
-        const activePatterns = {};
+        const activePatterns = {};  // 활성화된 패턴만 담을 객체
         
+        // 모든 패턴을 순회하며 활성화된 것들만 결과에 포함
         Object.keys(allPatterns).forEach(key => {
             if (allPatterns[key].enabled) {
                 activePatterns[key] = allPatterns[key];

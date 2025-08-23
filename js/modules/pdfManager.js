@@ -1,80 +1,116 @@
-// PDF Manager - Handles PDF loading, rendering, and text extraction
+/**
+ * PDF 관리자 클래스 - PDF 파일의 로딩, 렌더링, 텍스트 추출을 담당합니다
+ * 
+ * 이 클래스는 PDF.js 라이브러리를 사용하여 PDF 파일을 브라우저에서 처리하고,
+ * 사용자가 PDF를 보고 상호작용할 수 있도록 지원합니다.
+ * 
+ * 주요 기능:
+ * - PDF 파일 로딩 및 렌더링
+ * - 페이지 네비게이션 (이전/다음 페이지)
+ * - 확대/축소 및 화면 맞춤 기능
+ * - 텍스트 추출 (위치 정보 포함)
+ * - 태그 하이라이트 오버레이 기능
+ * - 다중 선택 인터랙션 (드래그 및 Ctrl+클릭)
+ */
 export class PDFManager {
     constructor() {
-        this.currentPDF = null;
-        this.currentPage = 1;
-        this.scale = 1.0;
-        this.canvas = document.getElementById('pdf-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.maxScale = 3.0;
-        this.minScale = 0.3;
+        // PDF 문서 및 렌더링 관련 속성들
+        this.currentPDF = null;          // 현재 로드된 PDF 문서 객체
+        this.currentPage = 1;            // 현재 보여지는 페이지 번호
+        this.scale = 1.0;                // 현재 확대/축소 비율
+        this.canvas = document.getElementById('pdf-canvas');    // PDF를 그릴 Canvas 요소
+        this.ctx = this.canvas.getContext('2d');               // Canvas 2D 렌더링 컨텍스트
+        this.maxScale = 3.0;             // 최대 확대 비율 (300%)
+        this.minScale = 0.3;             // 최소 축소 비율 (30%)
         
-        // Multi-selection properties
-        this.selectedTags = new Set(); // Store multiple selected tag IDs
-        this.isSelecting = false;
-        this.selectionStart = null;
-        this.selectionRect = null;
+        // 다중 선택 기능 관련 속성들
+        this.selectedTags = new Set();   // 선택된 태그 ID들을 저장하는 Set 객체
+        this.isSelecting = false;        // 현재 드래그 선택 중인지 여부
+        this.selectionStart = null;      // 드래그 선택 시작 좌표
+        this.selectionRect = null;       // 드래그 선택 영역 사각형 정보
         
-        // Configure PDF.js worker
+        // PDF.js 웹 워커 설정 - PDF 처리를 별도 스레드에서 수행하여 메인 스레드 블록을 방지
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
         
-        // Setup multi-selection event handlers
+        // 다중 선택 이벤트 핸들러 설정 - 마우스 드래그 및 키보드 조합 이벤트 처리
         this.setupMultiSelectionHandlers();
     }
 
+    /**
+     * PDF 파일 로딩 메서드
+     * 업로드된 PDF 파일을 브라우저에서 읽고 파싱합니다
+     * 
+     * @param {File} file - 업로드된 PDF 파일 객체
+     */
     async loadPDF(file) {
         try {
+            // 파일을 ArrayBuffer로 변환 - PDF.js가 요구하는 데이터 형식
             const arrayBuffer = await file.arrayBuffer();
-            this.currentPDF = await pdfjsLib.getDocument(arrayBuffer).promise;
-            this.currentPage = 1;
-            this.scale = 1.0;
             
+            // PDF.js를 사용하여 PDF 문서 객체 생성
+            this.currentPDF = await pdfjsLib.getDocument(arrayBuffer).promise;
+            
+            // 초기 설정으로 리셋
+            this.currentPage = 1;        // 첫 번째 페이지부터 시작
+            this.scale = 1.0;            // 100% 크기로 시작
+            
+            // 첫 번째 페이지 렌더링
             await this.renderPage();
+            
+            // 페이지 정보 및 UI 컨트롤 업데이트
             this.updatePageInfo();
             this.updateControls();
             
             console.log('PDF 로딩 완료:', {
-                pages: this.currentPDF.numPages,
-                title: file.name
+                pages: this.currentPDF.numPages,    // 전체 페이지 수
+                title: file.name                    // 파일명
             });
             
         } catch (error) {
             console.error('PDF 로딩 실패:', error);
-            throw error;
+            throw error;    // 에러를 호출자에게 전파
         }
     }
 
+    /**
+     * 현재 페이지 렌더링 메서드
+     * 선택된 페이지를 Canvas에 그립니다
+     */
     async renderPage() {
-        if (!this.currentPDF) return;
+        if (!this.currentPDF) return;    // PDF가 로드되지 않았다면 종료
 
         try {
+            // 현재 페이지의 PDF 페이지 객체 가져오기
             const page = await this.currentPDF.getPage(this.currentPage);
+            
+            // 현재 scale에 맞는 viewport(보이는 영역) 계산
             const viewport = page.getViewport({ scale: this.scale });
             
-            // Set canvas dimensions
+            // Canvas 크기를 viewport 크기에 맞게 설정
             this.canvas.width = viewport.width;
             this.canvas.height = viewport.height;
             
-            // Update overlay size to match canvas
+            // 태그 하이라이트용 오버레이 크기도 Canvas와 동일하게 설정
             const overlay = document.getElementById('pdf-overlay');
             overlay.style.width = viewport.width + 'px';
             overlay.style.height = viewport.height + 'px';
             
-            // Clear canvas
+            // 이전 내용을 지우고 깨끗한 상태로 만듦기
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             
-            // Render page
+            // PDF 페이지 렌더링 컨텍스트 설정
             const renderContext = {
-                canvasContext: this.ctx,
-                viewport: viewport
+                canvasContext: this.ctx,    // Canvas 2D 컨텍스트
+                viewport: viewport          // 보이는 영역 정보
             };
             
+            // 실제 PDF 페이지를 Canvas에 그리기 (비동기 처리)
             await page.render(renderContext).promise;
             
-            // Update zoom level display
+            // 현재 확대/축소 비율을 UI에 표시
             document.getElementById('zoom-level').textContent = `${Math.round(this.scale * 100)}%`;
             
-            // Notify that page has been rendered (for tag highlights)
+            // 페이지 렌더링 완료를 다른 모듈에 알림 (태그 하이라이트 업데이트용)
             if (this.onPageRendered) {
                 this.onPageRendered();
             }
@@ -85,24 +121,31 @@ export class PDFManager {
         }
     }
 
+    /**
+     * PDF에서 모든 텍스트를 추출하는 메서드
+     * 위치 정보 없이 순수한 텍스트만 추출합니다 (단순 텍스트 검색용)
+     * 
+     * @returns {string} 모든 페이지의 텍스트를 결합한 문자열
+     */
     async extractText() {
         if (!this.currentPDF) {
             throw new Error('PDF가 로드되지 않았습니다.');
         }
 
-        let allText = '';
+        let allText = '';  // 전체 텍스트를 담을 변수
         
         try {
+            // 모든 페이지를 순회하면서 텍스트 추출
             for (let pageNum = 1; pageNum <= this.currentPDF.numPages; pageNum++) {
                 const page = await this.currentPDF.getPage(pageNum);
                 const textContent = await page.getTextContent();
                 
-                // Extract text items
+                // 페이지의 모든 텍스트 아이템들을 문자열로 변환하고 공백으로 연결
                 const pageText = textContent.items
-                    .map(item => item.str)
-                    .join(' ');
+                    .map(item => item.str)    // 각 텍스트 아이템의 문자열 부분만 추출
+                    .join(' ');               // 공백으로 연결
                 
-                allText += pageText + '\n';
+                allText += pageText + '\n';   // 페이지별로 줄바꿈 추가
             }
             
             return allText;
@@ -113,27 +156,36 @@ export class PDFManager {
         }
     }
 
+    /**
+     * PDF에서 위치 정보가 포함된 텍스트를 추출하는 메서드
+     * 태그 인식과 공간 분석에 필요한 정확한 위치 정보를 제공합니다
+     * 
+     * @returns {Array} 각 텍스트 항목의 내용과 위치 정보를 포함한 객체 배열
+     */
     async extractTextWithPositions() {
         if (!this.currentPDF) {
             throw new Error('PDF가 로드되지 않았습니다.');
         }
 
-        const textWithPositions = [];
+        const textWithPositions = [];  // 위치 정보가 포함된 텍스트 배열
         
         try {
+            // 모든 페이지를 순회하면서 텍스트와 위치 정보를 함께 추출
             for (let pageNum = 1; pageNum <= this.currentPDF.numPages; pageNum++) {
                 const page = await this.currentPDF.getPage(pageNum);
-                const textContent = await page.getTextContent();
-                const viewport = page.getViewport({ scale: 1.0 });
+                const textContent = await page.getTextContent();        // 텍스트 내용 추출
+                const viewport = page.getViewport({ scale: 1.0 });      // 기본 스케일로 뷰포트 계산
                 
+                // 각 텍스트 아이템을 처리
                 textContent.items.forEach(item => {
-                    if (item.str && item.str.trim()) {
-                        // Get text position and dimensions
-                        const transform = item.transform;
-                        const x = transform[4];
-                        const y = viewport.height - transform[5]; // Convert to top-down coordinates
-                        const width = item.width;
-                        const height = item.height;
+                    if (item.str && item.str.trim()) {  // 빈 문자열이 아닌 경우만 처리
+                        // PDF 좌표계에서 텍스트의 정확한 위치와 크기를 계산
+                        // PDF.js는 PDF 좌표계를 사용하며, 이를 화면 좌표계로 변환해야 함
+                        const transform = item.transform;                      // PDF 변환 행렬
+                        const x = transform[4];                               // X 좌표
+                        const y = viewport.height - transform[5];             // Y 좌표 (상하 반전)
+                        const width = item.width;                             // 텍스트 폭
+                        const height = item.height;                           // 텍스트 높이
                         
                         textWithPositions.push({
                             text: item.str.trim(),

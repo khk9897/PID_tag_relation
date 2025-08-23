@@ -1,42 +1,65 @@
-// Storage Manager - Handles local storage and project persistence
+/**
+ * 로컬 저장소 관리자 클래스 - 브라우저 로컬 저장소와 프로젝트 지속성을 처리합니다
+ * 
+ * 이 클래스는 P&ID 태그 매핑 프로젝트의 데이터를 브라우저의 localStorage에 저장하고 관리합니다.
+ * 서버 없이 클라이언트 측에서만 동작하는 애플리케이션의 특성상 로컬 저장소가 주요 저장 매체입니다.
+ * 
+ * 주요 기능:
+ * - 프로젝트 저장 및 불러오기 (localStorage 기반)
+ * - 자동 저장 기능 (30초마다 자동 백업)
+ * - 프로젝트 목록 관리 및 제한 (최대 50개)
+ * - 애플리케이션 설정 지속성 관리
+ * - 데이터 무결성 및 오류 처리
+ * - JSON 직렬화/역직렬화 처리
+ */
 export class StorageManager {
     constructor() {
-        this.storageKey = 'pid_tag_mapping_projects';
-        this.autoSaveKey = 'pid_tag_mapping_autosave';
-        this.settingsKey = 'pid_tag_mapping_settings';
-        this.autoSaveInterval = 30000; // 30 seconds
-        this.maxProjects = 50; // Maximum number of saved projects
+        // localStorage에서 사용할 키 값들 정의
+        this.storageKey = 'pid_tag_mapping_projects';   // 저장된 프로젝트 목록용 키
+        this.autoSaveKey = 'pid_tag_mapping_autosave';  // 자동 저장 데이터용 키
+        this.settingsKey = 'pid_tag_mapping_settings';  // 애플리케이션 설정용 키
         
+        // 자동 저장 및 저장 제한 설정
+        this.autoSaveInterval = 30000;  // 30초마다 자동 저장
+        this.maxProjects = 50;          // 최대 저장 가능한 프로젝트 수 (메모리 관리)
+        
+        // 자동 저장 기능 초기화 및 시작
         this.setupAutoSave();
     }
 
-    // Save project to localStorage
+    /**
+     * 프로젝트를 localStorage에 영구 저장하는 메서드
+     * 사용자가 수동으로 저장 버튼을 클릭했을 때 호출됩니다.
+     * 
+     * @param {Object} project - 저장할 프로젝트 데이터 객체
+     */
     saveProject(project) {
         try {
+            // 기존 저장된 프로젝트 목록을 가져오기
             const projects = this.getAllProjects();
             
-            // Add timestamp if not exists
+            // 타임스탬프 메타데이터 추가
             if (!project.saved) {
-                project.saved = new Date().toISOString();
+                project.saved = new Date().toISOString();    // 최초 저장 시간
             }
-            project.modified = new Date().toISOString();
+            project.modified = new Date().toISOString();     // 최종 수정 시간 업데이트
 
-            // Generate project ID if not exists
+            // 고유 프로젝트 ID 생성 (없는 경우만)
             if (!project.id) {
                 project.id = this.generateProjectId();
             }
 
-            // Add or update project
+            // 기존 프로젝트 업데이트 또는 새 프로젝트 추가
             const existingIndex = projects.findIndex(p => p.id === project.id);
             if (existingIndex >= 0) {
-                projects[existingIndex] = project;
+                projects[existingIndex] = project;    // 기존 프로젝트 업데이트
             } else {
-                projects.unshift(project); // Add to beginning
+                projects.unshift(project);            // 새 프로젝트를 목록 맨 앞에 추가
             }
 
-            // Limit number of projects
+            // 저장된 프로젝트 수 제한 (메모리 및 성능 관리)
             if (projects.length > this.maxProjects) {
-                projects.splice(this.maxProjects);
+                projects.splice(this.maxProjects);    // 오래된 프로젝트들 제거
             }
 
             localStorage.setItem(this.storageKey, JSON.stringify(projects));

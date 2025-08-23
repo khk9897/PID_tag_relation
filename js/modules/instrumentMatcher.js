@@ -1,34 +1,56 @@
-// Instrument Matcher - Handles spatial relationship matching between instrument numbers and functions
+/**
+ * 계기 매칭기 클래스 - 계기 번호와 기능 코드 간의 공간적 관계 매칭을 처리합니다
+ * 
+ * 이 클래스는 P&ID 도면에서 계기 태그의 특수한 레이아웃 특성을 활용합니다:
+ * - 기능 코드 (PT, FT, TT 등)는 보통 번호 위쪽에 위치
+ * - 수평적으로는 중앙 정렬되어 있음
+ * - 일정한 거리 내에서 짝을 이룸
+ * 
+ * 주요 기능:
+ * - 공간 분석을 통한 기능-번호 매칭
+ * - PDF 특성에 따른 검색 파라미터 자동 조정
+ * - 여러 후보 중 최적 매칭 선택
+ * - 폴백 메커니즘으로 강인한 매칭 지원
+ */
 export class InstrumentMatcher {
     constructor(patternManager) {
-        this.patternManager = patternManager;
-        this.defaultSearchHeight = 10.0; // Default search height in points
+        this.patternManager = patternManager;  // 정규표현식 패턴 관리자 참조
+        this.defaultSearchHeight = 10.0;      // 기본 검색 높이 (PDF 포인트 단위)
     }
 
-    // Main function to find instrument functions for instrument numbers
+    /**
+     * 계기 번호에 대한 기능 코드를 찾는 메인 메서드
+     * PDF의 텍스트 배치 특성을 분석하여 최적화된 공간 검색을 수행합니다
+     * 
+     * @param {Array} textWithPositions - 위치 정보가 포함된 텍스트 요소 배열
+     * @param {number} searchHeight - 선택적 검색 높이 (지정하지 않으면 자동 계산)
+     * @returns {Array} 매칭된 계기 태그 객체 배열
+     */
     findInstrumentFunctions(textWithPositions, searchHeight = null) {
-        // Adjust search parameters based on PDF characteristics first
+        // 단계 1: PDF 특성에 맞게 검색 파라미터를 먼저 조정
         const adjustmentResults = this.adjustSearchParameters(textWithPositions);
-        console.log('검색 파라미터 조정 결과:', adjustmentResults);
+        console.log('검색 파라미터 자동 조정 결과:', adjustmentResults);
         
+        // 최종 검색 높이 결정 (사용자 지정 또는 자동 계산된 값)
         const height = searchHeight || this.defaultSearchHeight;
-        const instrumentTags = [];
+        const instrumentTags = [];  // 결과를 담을 배열
         
-        // Get active patterns
+        // 단계 2: 활성 화된 패턴들을 가져오기
         const patterns = this.patternManager.getActivePatterns();
-        const instrumentNumberPattern = patterns['Instrument_number'];
-        const instrumentFunctionPattern = patterns['Instrument_function'];
+        const instrumentNumberPattern = patterns['Instrument_number'];   // 계기 번호 패턴 (1234, 2001 등)
+        const instrumentFunctionPattern = patterns['Instrument_function']; // 계기 기능 패턴 (PT, FT, TT 등)
         
+        // 패턴이 없으면 인식 불가
         if (!instrumentNumberPattern || !instrumentFunctionPattern) {
-            console.warn('Instrument patterns not found');
+            console.warn('계기 태그 인식용 패턴을 찾을 수 없습니다');
             return [];
         }
 
-        // Find all instrument numbers first
+        // 단계 3: 모든 계기 번호를 먼저 찾기
         const instrumentNumbers = this.findInstrumentNumbers(textWithPositions, instrumentNumberPattern);
-        console.log(`찾은 instrument numbers: ${instrumentNumbers.length}개`);
+        console.log(`발견된 계기 번호: ${instrumentNumbers.length}개`);
         
-        // For each instrument number, find its corresponding function
+        // 단계 4: 각 계기 번호에 대해 대응하는 기능 코드 찾기
         instrumentNumbers.forEach(instrumentNum => {
             const functionText = this.findFunctionForInstrument(
                 textWithPositions, 
@@ -53,14 +75,14 @@ export class InstrumentMatcher {
                 functionPosition: functionText ? this.findFunctionPosition(textWithPositions, functionText, instrumentNum) : null,
                 patternName: 'Instrument_number',
                 created: new Date().toISOString(),
-                // Add position information for PDF highlighting
+                // PDF 하이라이트를 위한 위치 정보 추가
                 position: {
-                    x: instrumentNum.x,
-                    y: instrumentNum.y,
-                    width: instrumentNum.width,
-                    height: instrumentNum.height,
-                    page: instrumentNum.page,
-                    bbox: instrumentNum.bbox
+                    x: instrumentNum.x,         // X 좌표
+                    y: instrumentNum.y,         // Y 좌표
+                    width: instrumentNum.width,   // 폭
+                    height: instrumentNum.height, // 높이
+                    page: instrumentNum.page,     // 페이지 번호
+                    bbox: instrumentNum.bbox      // 경계 상자
                 }
             };
 
@@ -70,13 +92,21 @@ export class InstrumentMatcher {
         return instrumentTags;
     }
 
-    // Find all instrument numbers in the text
+    /**
+     * 텍스트에서 모든 계기 번호를 찾는 메서드
+     * 주어진 패턴에 매칭되는 모든 텍스트 요소를 찾아 반환합니다
+     * 
+     * @param {Array} textWithPositions - 위치 정보가 포함된 텍스트 요소 배열
+     * @param {Object} pattern - 계기 번호 인식용 정규표현식 패턴
+     * @returns {Array} 발견된 계기 번호 요소들의 배열
+     */
     findInstrumentNumbers(textWithPositions, pattern) {
-        const instrumentNumbers = [];
+        const instrumentNumbers = [];  // 결과를 담을 배열
         
+        // 모든 텍스트 요소를 검사하여 계기 번호 패턴에 매칭되는 것들을 찾기
         textWithPositions.forEach(item => {
             if (this.patternManager.testPattern(pattern.pattern, item.text)) {
-                instrumentNumbers.push(item);
+                instrumentNumbers.push(item);  // 패턴에 매칭되면 결과 배열에 추가
             }
         });
 
@@ -85,29 +115,38 @@ export class InstrumentMatcher {
 
     // Find function text above an instrument number
     findFunctionForInstrument(textWithPositions, instrumentNumber, functionPattern, searchHeight) {
-        const { x, y, width, page } = instrumentNumber;
+        const { x, y, width, height, page } = instrumentNumber;
         const instrumentCenterX = x + width / 2;
+        const instrumentCenterY = y + height / 2;
         
-        // Define search area above the instrument number
-        // Function should be above (smaller y) and horizontally aligned
-        const searchY1 = y - searchHeight; // Top of search area
-        const searchY2 = y + 2; // Allow slight overlap below instrument
+        console.log(`\n=== Searching for function for instrument ${instrumentNumber.text} ===`);
+        console.log(`Instrument position:`, { x, y, width, height, centerX: instrumentCenterX, centerY: instrumentCenterY, page });
         
-        // Horizontal tolerance for alignment (allow some offset)
-        const horizontalTolerance = width * 1.5; // 1.5x instrument width
+        // Enhanced search area - look above and around the instrument number
+        // In PDF coordinate system, smaller Y values are typically higher on the page
+        const searchY1 = y - searchHeight; // Top of search area (above instrument)
+        const searchY2 = y + height + 3; // Bottom of search area (slightly below instrument)
+        
+        // Wider horizontal tolerance for better matching
+        const horizontalTolerance = Math.max(width * 2.0, 20); // At least 2x width or 20 points
         const searchX1 = instrumentCenterX - horizontalTolerance;
         const searchX2 = instrumentCenterX + horizontalTolerance;
 
-        console.log(`Instrument ${instrumentNumber.text}의 함수 검색:`, {
-            instrumentPosition: { x, y, width, page },
-            instrumentCenter: instrumentCenterX,
-            searchArea: { 
-                x1: searchX1, x2: searchX2, 
-                y1: searchY1, y2: searchY2 
-            },
-            horizontalTolerance,
+        console.log(`Search area:`, {
+            horizontal: { x1: searchX1, x2: searchX2, tolerance: horizontalTolerance },
+            vertical: { y1: searchY1, y2: searchY2, height: searchHeight },
             functionPattern: functionPattern.pattern
         });
+
+        // Debug: Show all text items on the same page for comparison
+        const pageTexts = textWithPositions.filter(item => item.page === page);
+        console.log(`Total texts on page ${page}:`, pageTexts.length);
+        
+        // Find all potential function texts first (before position filtering)
+        const functionTexts = pageTexts.filter(item => 
+            this.patternManager.testPattern(functionPattern.pattern, item.text)
+        );
+        console.log(`Function pattern matches on page:`, functionTexts.map(f => ({ text: f.text, x: f.x, y: f.y })));
 
         // Find all function texts in the search area
         const candidateFunctions = textWithPositions.filter(item => {
@@ -118,49 +157,121 @@ export class InstrumentMatcher {
             const matches = this.patternManager.testPattern(functionPattern.pattern, item.text);
             if (!matches) return false;
             
-            // Must be in the vertical search range (above the instrument)
-            if (item.y < searchY1 || item.y > searchY2) return false;
+            // Check if it's in the vertical search range
+            const inVerticalRange = item.y >= searchY1 && item.y <= searchY2;
             
             // Check horizontal alignment with tolerance
             const functionCenterX = item.x + item.width / 2;
             const horizontalDistance = Math.abs(functionCenterX - instrumentCenterX);
             const isHorizontallyAligned = functionCenterX >= searchX1 && functionCenterX <= searchX2;
             
-            console.log(`후보 함수 '${item.text}':`, {
+            // Calculate relative position to instrument
+            const relativeY = item.y - y; // Negative means above instrument
+            const relativeX = functionCenterX - instrumentCenterX; // Distance from center
+            
+            console.log(`  Function candidate '${item.text}':`, {
                 position: { x: item.x, y: item.y, width: item.width },
                 functionCenter: functionCenterX,
-                horizontalDistance,
+                horizontalDistance: horizontalDistance.toFixed(1),
+                relativePosition: { x: relativeX.toFixed(1), y: relativeY.toFixed(1) },
+                isAbove: relativeY < 0,
                 isHorizontallyAligned,
-                matches,
-                inVerticalRange: item.y >= searchY1 && item.y <= searchY2
+                inVerticalRange,
+                passes: inVerticalRange && isHorizontallyAligned
             });
             
-            return isHorizontallyAligned;
+            return inVerticalRange && isHorizontallyAligned;
         });
         
-        console.log(`찾은 후보 함수들:`, candidateFunctions.map(f => f.text));
+        console.log(`Found ${candidateFunctions.length} candidate functions:`, candidateFunctions.map(f => f.text));
 
-        // Return the closest function by combined distance (prioritize vertical distance)
+        // Return the closest function using improved selection logic
         if (candidateFunctions.length > 0) {
-            const closestFunction = candidateFunctions.reduce((closest, current) => {
-                // Calculate combined distance (prioritize vertical alignment)
-                const closestHorizontalDist = Math.abs((closest.x + closest.width / 2) - instrumentCenterX);
-                const closestVerticalDist = Math.abs(closest.y - y) * 2; // Weight vertical distance more
-                const closestTotalDist = closestHorizontalDist + closestVerticalDist;
+            // Prioritize functions that are above the instrument (negative relativeY)
+            const functionsAbove = candidateFunctions.filter(f => f.y < y);
+            const functionsToConsider = functionsAbove.length > 0 ? functionsAbove : candidateFunctions;
+            
+            console.log(`  Functions above instrument: ${functionsAbove.length}, considering: ${functionsToConsider.length}`);
+            
+            const closestFunction = functionsToConsider.reduce((closest, current) => {
+                // Calculate weighted distances
+                const closestCenterX = closest.x + closest.width / 2;
+                const currentCenterX = current.x + current.width / 2;
                 
-                const currentHorizontalDist = Math.abs((current.x + current.width / 2) - instrumentCenterX);
-                const currentVerticalDist = Math.abs(current.y - y) * 2;
-                const currentTotalDist = currentHorizontalDist + currentVerticalDist;
+                const closestHorizontalDist = Math.abs(closestCenterX - instrumentCenterX);
+                const currentHorizontalDist = Math.abs(currentCenterX - instrumentCenterX);
                 
-                return currentTotalDist < closestTotalDist ? current : closest;
+                // For vertical distance, prefer functions above (negative relativeY)
+                const closestVerticalDist = Math.abs(closest.y - instrumentCenterY);
+                const currentVerticalDist = Math.abs(current.y - instrumentCenterY);
+                
+                // Strong preference for functions directly above (smaller vertical distance)
+                // and reasonable horizontal alignment
+                const closestScore = closestHorizontalDist * 0.5 + closestVerticalDist * 2.0;
+                const currentScore = currentHorizontalDist * 0.5 + currentVerticalDist * 2.0;
+                
+                console.log(`    Scoring '${closest.text}': h=${closestHorizontalDist.toFixed(1)}, v=${closestVerticalDist.toFixed(1)}, score=${closestScore.toFixed(1)}`);
+                console.log(`    Scoring '${current.text}': h=${currentHorizontalDist.toFixed(1)}, v=${currentVerticalDist.toFixed(1)}, score=${currentScore.toFixed(1)}`);
+                
+                return currentScore < closestScore ? current : closest;
             });
             
             const finalHorizontalDistance = Math.abs((closestFunction.x + closestFunction.width / 2) - instrumentCenterX);
-            const finalVerticalDistance = Math.abs(closestFunction.y - y);
-            console.log(`선택된 함수: ${closestFunction.text} (수평거리: ${finalHorizontalDistance.toFixed(1)}, 수직거리: ${finalVerticalDistance.toFixed(1)})`);
+            const finalVerticalDistance = Math.abs(closestFunction.y - instrumentCenterY);
+            const isAbove = closestFunction.y < y;
+            
+            console.log(`  -> Selected function: '${closestFunction.text}'`, {
+                horizontalDistance: finalHorizontalDistance.toFixed(1),
+                verticalDistance: finalVerticalDistance.toFixed(1),
+                isAbove,
+                position: { x: closestFunction.x, y: closestFunction.y }
+            });
+            
             return closestFunction.text;
         }
 
+        console.log(`No function found for instrument ${instrumentNumber.text}`);
+        
+        // Fallback: Look for the nearest function on the same page (relaxed criteria)
+        const allFunctionTexts = textWithPositions.filter(item => 
+            item.page === page && 
+            this.patternManager.testPattern(functionPattern.pattern, item.text)
+        );
+        
+        if (allFunctionTexts.length > 0) {
+            console.log(`  Fallback search: ${allFunctionTexts.length} functions on page`);
+            
+            // Find the closest function by straight-line distance
+            const nearestFunction = allFunctionTexts.reduce((nearest, current) => {
+                const nearestCenterX = nearest.x + nearest.width / 2;
+                const nearestCenterY = nearest.y + nearest.height / 2;
+                const nearestDistance = Math.sqrt(
+                    Math.pow(nearestCenterX - instrumentCenterX, 2) + 
+                    Math.pow(nearestCenterY - instrumentCenterY, 2)
+                );
+                
+                const currentCenterX = current.x + current.width / 2;
+                const currentCenterY = current.y + current.height / 2;
+                const currentDistance = Math.sqrt(
+                    Math.pow(currentCenterX - instrumentCenterX, 2) + 
+                    Math.pow(currentCenterY - instrumentCenterY, 2)
+                );
+                
+                return currentDistance < nearestDistance ? current : nearest;
+            });
+            
+            const distance = Math.sqrt(
+                Math.pow((nearestFunction.x + nearestFunction.width / 2) - instrumentCenterX, 2) + 
+                Math.pow((nearestFunction.y + nearestFunction.height / 2) - instrumentCenterY, 2)
+            );
+            
+            // Only use fallback if it's reasonably close (within 100 points)
+            if (distance < 100) {
+                console.log(`  -> Fallback function: '${nearestFunction.text}' (distance: ${distance.toFixed(1)})`);
+                return nearestFunction.text;
+            }
+        }
+        
         return null;
     }
 
@@ -295,59 +406,87 @@ export class InstrumentMatcher {
 
     // Adjust search parameters based on PDF characteristics
     adjustSearchParameters(textWithPositions) {
+        console.log('\n=== Adjusting search parameters ===');
+        
         // Calculate average text height to adjust search parameters
         const textHeights = textWithPositions
             .filter(item => item.height > 0)
             .map(item => item.height);
         
+        let avgHeight = 0;
         if (textHeights.length > 0) {
-            const avgHeight = textHeights.reduce((sum, h) => sum + h, 0) / textHeights.length;
-            // Adjust search height based on average text height
-            // Use 3x average height to account for spacing between function and number
-            this.defaultSearchHeight = Math.max(avgHeight * 3, 8.0);
+            avgHeight = textHeights.reduce((sum, h) => sum + h, 0) / textHeights.length;
+            // More conservative search height: 4-6x average height
+            this.defaultSearchHeight = Math.max(avgHeight * 5, 15.0);
+        } else {
+            this.defaultSearchHeight = 25.0; // Fallback default
         }
+
+        // Get patterns with better error handling
+        const patterns = this.patternManager.getActivePatterns();
+        const instrumentNumberPattern = patterns['Instrument_number']?.pattern || /^\d{4}\s?[A-Za-z0-9-]{0,3}$/;
+        const instrumentFunctionPattern = patterns['Instrument_function']?.pattern || /^[A-Z]{2,4}$/;
 
         // Analyze text patterns to detect common function-number spacing
         const instrumentNumbers = textWithPositions.filter(item => 
-            this.patternManager.testPattern(
-                this.patternManager.getActivePatterns()['Instrument_number']?.pattern || /^\d{4}\s?[A-Za-z0-9-]{0,3}$/,
-                item.text
-            )
+            this.patternManager.testPattern(instrumentNumberPattern, item.text)
         );
 
         const functionTexts = textWithPositions.filter(item =>
-            this.patternManager.testPattern(
-                this.patternManager.getActivePatterns()['Instrument_function']?.pattern || /^[A-Z]{2,4}$/,
-                item.text
-            )
+            this.patternManager.testPattern(instrumentFunctionPattern, item.text)
         );
+
+        console.log(`Found ${instrumentNumbers.length} instrument numbers and ${functionTexts.length} function texts`);
 
         // Calculate common vertical distances between functions and numbers
         const verticalDistances = [];
+        const spatialPairs = [];
+        
         instrumentNumbers.forEach(number => {
             functionTexts.forEach(func => {
-                if (func.page === number.page && func.y < number.y) {
-                    const distance = number.y - func.y;
-                    if (distance > 0 && distance < 50) { // Reasonable range
-                        verticalDistances.push(distance);
+                if (func.page === number.page) {
+                    const verticalDistance = Math.abs(number.y - func.y);
+                    const horizontalDistance = Math.abs((number.x + number.width/2) - (func.x + func.width/2));
+                    
+                    // Only consider reasonable proximity (both vertical and horizontal)
+                    if (verticalDistance > 0 && verticalDistance < 80 && horizontalDistance < 100) {
+                        verticalDistances.push(verticalDistance);
+                        spatialPairs.push({
+                            number: number.text,
+                            function: func.text,
+                            vDist: verticalDistance,
+                            hDist: horizontalDistance,
+                            isAbove: func.y < number.y
+                        });
                     }
                 }
             });
         });
 
+        // Use more robust statistical analysis
         if (verticalDistances.length > 0) {
-            // Use the median distance as a more robust estimate
             verticalDistances.sort((a, b) => a - b);
-            const medianDistance = verticalDistances[Math.floor(verticalDistances.length / 2)];
-            this.defaultSearchHeight = Math.max(medianDistance * 1.2, this.defaultSearchHeight);
+            const q1 = verticalDistances[Math.floor(verticalDistances.length * 0.25)];
+            const median = verticalDistances[Math.floor(verticalDistances.length * 0.5)];
+            const q3 = verticalDistances[Math.floor(verticalDistances.length * 0.75)];
+            
+            // Use the 75th percentile to capture most cases while avoiding outliers
+            this.defaultSearchHeight = Math.max(q3 * 1.3, this.defaultSearchHeight, 20.0);
+            
+            console.log(`Distance statistics:`, { q1: q1.toFixed(1), median: median.toFixed(1), q3: q3.toFixed(1) });
         }
 
-        return {
+        const result = {
             searchHeight: this.defaultSearchHeight,
-            avgTextHeight: textHeights.length > 0 ? 
-                textHeights.reduce((sum, h) => sum + h, 0) / textHeights.length : 0,
-            sampleVerticalDistances: verticalDistances.slice(0, 5) // Show first 5 for debugging
+            avgTextHeight: avgHeight,
+            instrumentNumbers: instrumentNumbers.length,
+            functionTexts: functionTexts.length,
+            spatialPairs: spatialPairs.length,
+            samplePairs: spatialPairs.slice(0, 3) // Show first 3 for debugging
         };
+        
+        console.log('Search parameter adjustment result:', result);
+        return result;
     }
 
     // Debug function to visualize search areas

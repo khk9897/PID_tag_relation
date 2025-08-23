@@ -2,6 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Commands
+
+### Starting the Application
+```bash
+# Install dependencies (first time only)
+npm install
+
+# Start development server (with live reload)
+npm run dev
+
+# Start production server
+npm start
+
+# Manual server start (Python alternative)
+python -m http.server 8000
+```
+
+### Development Workflow
+- **No build process required** - This is a vanilla JavaScript application that runs directly in the browser
+- **Live development** - Changes to JS/CSS/HTML are immediately reflected on browser refresh
+- **Local development** - Application runs entirely client-side with no backend dependencies
+- **Testing** - Manual testing through browser interface with PDF file uploads
+
 ## Project Overview
 
 This is a web application for processing P&ID (Piping & Instrumentation Diagram) PDF files to automatically identify and manually map relationships between equipment, line, and instrument tags, then export the data to Excel format.
@@ -10,7 +33,40 @@ This is a web application for processing P&ID (Piping & Instrumentation Diagram)
 **Input**: Vector-based CAD PDF files (50-100 tags per page)
 **Output**: Excel files with Equipment List, Line List, and Instrument List
 
-## Architecture
+## Code Architecture
+
+### Application Structure
+This is a modular ES6+ JavaScript application with the following key architectural patterns:
+
+**Main Application Class**: `PIDApp` in `js/app.js` serves as the central controller that:
+- Instantiates and coordinates all manager modules
+- Handles UI event delegation and state management
+- Manages PDF-to-tag panel synchronization through callback systems
+- Controls application modes (normal, connection mapping, installation mapping)
+
+**Module Architecture**: Each major functionality is encapsulated in ES6 classes:
+- `PDFManager`: PDF.js integration, canvas overlay system, multi-selection with drag/Ctrl+click
+- `TagManager`: Regex pattern matching, spatial analysis for instrument function-number pairing
+- `PatternManager`: User-defined regex patterns with validation and testing
+- `RelationshipManager`: Tag relationship creation and management
+- `StorageManager`: LocalStorage/IndexedDB persistence layer
+- `ExportManager`: Excel file generation with multiple sheets
+
+**Key Architectural Decisions**:
+- **No build system** - Direct ES6 module imports for simplicity
+- **Event-driven communication** - Managers communicate via callbacks, not tight coupling  
+- **Canvas-based visualization** - PDF overlay system using HTML5 Canvas for zoom-responsive highlighting
+- **Client-side only** - No server dependencies, all processing in browser
+- **Modular CSS** - Component-based styling with BEM-like naming conventions
+
+### Multi-Selection System Architecture
+The application implements a sophisticated dual-selection system:
+- **PDF Selection**: Drag rectangles and Ctrl+click on PDF highlights managed by `PDFManager`
+- **Panel Selection**: Tag list selections in right panel managed by `selectedTagsManager`
+- **Bidirectional Sync**: Changes in either system update both PDF highlights and panel selections
+- **Visual Feedback**: Different highlight styles for single vs multi-selection with CSS animations
+
+## System Architecture
 
 The system follows a client-heavy web architecture with local data persistence:
 
@@ -110,25 +166,43 @@ The system follows a client-heavy web architecture with local data persistence:
 
 ## Recent Development Notes
 
-### Recent Updates (2025-08-22)
+### Recent Updates (2025-08-23)
+- **PDF Multi-Selection System**: Complete drag and Ctrl+click multi-selection implementation
+  - Drag rectangle selection for area-based tag selection
+  - Ctrl+click for individual tag toggle selection
+  - Visual selection indicators with red borders and animations
+  - Bidirectional sync between PDF highlights and tag panel
+- **Tag Board Redesign**: Unified compact interface with selected tags management
+  - Redesigned tag board with consistent styling across all categories
+  - Selected tags section with visual tag chips and individual removal
+  - Relationship creation directly from selected tags (connection/installation)
+  - Collapsible relationships panel for better space utilization
 - **Enhanced Instrument Function Matching**: Significantly improved spatial analysis algorithm in `instrumentMatcher.js`
   - Added adaptive search height calculation based on PDF text characteristics
   - Improved horizontal alignment detection with configurable tolerance (1.5x instrument width)
   - Implemented weighted distance calculation prioritizing vertical alignment
   - Added automatic parameter adjustment using median spacing analysis
-  - Enhanced debugging and logging for better troubleshooting
-- **Pattern Settings**: All event listeners properly connected, modal functionality fully working
-- **PDF Highlighting**: Zoom-responsive positioning and color restoration working correctly
-- **Bidirectional Selection**: PDF highlight clicks properly select corresponding tags in panel
 
 ### Known Issues & Improvements Needed
 - **Complex Layout Edge Cases**: In very dense P&ID layouts with overlapping text, some instrument functions may require manual verification
 
-### Testing Requirements
-- Test instrument function matching with various PDF layouts
-- Verify pattern settings functionality across different browsers
-- Validate zoom behavior with complex tag layouts
-- Test project reset and data persistence
+### Development Considerations
+
+**Common Issues & Solutions**:
+- **CSS Selector Errors**: Use `CSS.escape()` or dataset comparison for tag IDs with special characters
+- **PDF Highlight Positioning**: Ensure zoom-responsive callbacks are properly set up in `onPageRendered`
+- **Multi-Selection Conflicts**: Clear single selections before applying multi-selection styles
+- **Event Target Issues**: Use `closest()` method for complex UI elements with child components
+
+**Performance Considerations**:
+- **Large PDF Files**: 50MB+ files may cause memory issues in older browsers
+- **Tag Volume**: 10,000+ tags may require virtualization of tag lists
+- **Real-time Highlighting**: Debounce zoom/pan operations to prevent excessive redraws
+
+**Cross-Browser Compatibility**:
+- Chrome/Edge: Full feature support
+- Firefox: Some CSS animation limitations
+- Safari: Limited testing, may have Canvas API differences
 
 ## Technical Constraints
 

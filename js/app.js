@@ -1,117 +1,167 @@
-// P&ID Tag Mapping System - Main Application
-import { PDFManager } from './modules/pdfManager.js';
-import { TagManager } from './modules/tagManager.js';
-import { RelationshipManager } from './modules/relationshipManager.js';
-import { StorageManager } from './modules/storageManager.js';
-import { ExportManager } from './modules/exportManager.js';
-import { PatternUI } from './modules/patternUI.js';
+/**
+ * P&ID Tag Mapping System - 메인 애플리케이션 클래스
+ * 
+ * 이 파일은 P&ID 태그 매핑 시스템의 핵심 컨트롤러입니다.
+ * PDF 파일을 업로드하여 태그를 자동 인식하고, 태그 간의 관계를 매핑하여 Excel로 내보내는 기능을 제공합니다.
+ * 
+ * 주요 기능:
+ * - PDF 파일 업로드 및 렌더링
+ * - 태그 자동 인식 (Equipment, Line, Instrument)
+ * - 태그 간 관계 매핑 (Connection, Installation)
+ * - 태그 다중 선택 및 관리
+ * - Excel 파일로 데이터 내보내기
+ * - 프로젝트 저장 및 불러오기
+ */
 
+// 각 모듈을 ES6 모듈 시스템으로 가져옵니다
+import { PDFManager } from './modules/pdfManager.js';      // PDF 관리 (렌더링, 하이라이트 등)
+import { TagManager } from './modules/tagManager.js';      // 태그 인식 및 관리
+import { RelationshipManager } from './modules/relationshipManager.js'; // 태그 관계 관리
+import { StorageManager } from './modules/storageManager.js'; // 로컬 저장소 관리
+import { ExportManager } from './modules/exportManager.js';   // Excel 내보내기 관리
+import { PatternUI } from './modules/patternUI.js';          // 패턴 설정 UI 관리
+
+/**
+ * PIDApp 클래스 - 애플리케이션의 메인 컨트롤러
+ * 
+ * 이 클래스는 모든 모듈들을 통합하고 관리하는 중앙 컨트롤러 역할을 합니다.
+ * 사용자 인터페이스와 각 기능 모듈 간의 통신을 담당합니다.
+ */
 class PIDApp {
     constructor() {
-        this.pdfManager = new PDFManager();
-        this.tagManager = new TagManager();
-        this.relationshipManager = new RelationshipManager();
-        this.storageManager = new StorageManager();
-        this.exportManager = new ExportManager();
-        this.patternUI = new PatternUI(this);
+        // 각 모듈의 인스턴스를 생성합니다
+        this.pdfManager = new PDFManager();           // PDF 파일 관리 모듈
+        this.tagManager = new TagManager();           // 태그 인식 및 관리 모듈
+        this.relationshipManager = new RelationshipManager(); // 태그 관계 관리 모듈
+        this.storageManager = new StorageManager();   // 로컬 저장소 관리 모듈
+        this.exportManager = new ExportManager();     // Excel 내보내기 모듈
+        this.patternUI = new PatternUI(this);         // 패턴 설정 UI 모듈
         
-        this.currentProject = null;
-        this.mappingMode = 'normal'; // normal, connection, installation
-        this.selectedTags = [];
+        // 애플리케이션 상태 변수들
+        this.currentProject = null;          // 현재 작업 중인 프로젝트 데이터
+        this.mappingMode = 'normal';         // 현재 매핑 모드: 'normal', 'connection', 'installation'
+        this.selectedTags = [];              // 관계 매핑용 선택된 태그들 (레거시)
         
-        // Set up PDF highlight click callback (legacy single selection)
+        // PDF 하이라이트 클릭 시 콜백 함수 설정 (단일 선택 - 레거시)
+        // PDF에서 태그 하이라이트를 클릭했을 때 실행됩니다
         this.pdfManager.onHighlightClick = (tagId, tagCategory) => {
             this.selectTagFromPDF(tagId, tagCategory);
         };
         
-        // Set up PDF multi-selection callback
+        // PDF 다중 선택 콜백 함수 설정
+        // PDF에서 드래그나 Ctrl+클릭으로 여러 태그를 선택했을 때 실행됩니다
         this.pdfManager.onMultipleTagsSelected = (tagIds, categories) => {
             this.handleMultipleTagSelection(tagIds, categories);
         };
 
-        // Initialize selected tags management
+        // 선택된 태그 관리 객체 초기화
+        // 태그 보드에서 사용하는 선택된 태그들을 관리합니다
         this.selectedTagsManager = {
-            selectedTags: new Set(),
-            updateUI: () => this.updateSelectedTagsUI(),
-            add: (tagId, category) => this.addToSelectedTags(tagId, category),
-            remove: (tagId) => this.removeFromSelectedTags(tagId),
-            clear: () => this.clearSelectedTags(),
-            getAll: () => Array.from(this.selectedTagsManager.selectedTags)
+            selectedTags: new Set(),                    // 선택된 태그 ID들을 저장하는 Set 객체
+            updateUI: () => this.updateSelectedTagsUI(),     // 선택된 태그 UI 업데이트 함수
+            add: (tagId, category) => this.addToSelectedTags(tagId, category),    // 태그 추가 함수
+            remove: (tagId) => this.removeFromSelectedTags(tagId),                // 태그 제거 함수
+            clear: () => this.clearSelectedTags(),                               // 모든 선택 해제 함수
+            getAll: () => Array.from(this.selectedTagsManager.selectedTags)     // 모든 선택된 태그 반환 함수
         };
         
-        // Set up PDF page rendering callback for highlight updates
+        // PDF 페이지 렌더링 완료 시 콜백 함수 설정
+        // 페이지가 새로 그려질 때마다 태그 목록을 현재 페이지에 맞게 업데이트합니다
         this.pdfManager.onPageRendered = () => {
             this.updateTagListsForCurrentPage();
         };
         
+        // 애플리케이션 초기화 실행
         this.init();
     }
 
+    /**
+     * 애플리케이션 초기화 메서드
+     * 애플리케이션 시작 시 필요한 모든 초기 설정을 수행합니다
+     */
     init() {
-        this.setupEventListeners();
-        this.setupKeyboardShortcuts();
-        this.setupTabSwitching();
-        this.loadAutoSave();
+        this.setupEventListeners();    // 이벤트 리스너 설정
+        this.setupKeyboardShortcuts();  // 키보드 단축키 설정
+        this.setupTabSwitching();       // 탭 전환 기능 설정
+        this.loadAutoSave();            // 자동 저장된 프로젝트 복원
     }
 
+    /**
+     * 이벤트 리스너 설정 메서드
+     * 사용자 인터페이스의 모든 버튼과 입력 요소에 이벤트 리스너를 연결합니다
+     */
     setupEventListeners() {
-        // PDF Upload
+        // === PDF 업로드 관련 이벤트 ===
+        // 숨겨진 파일 입력 요소에서 파일 선택 시 PDF 업로드 처리
         document.getElementById('pdf-upload').addEventListener('change', (e) => {
             this.handlePDFUpload(e.target.files[0]);
         });
 
+        // 업로드 버튼 클릭 시 파일 선택 대화상자 열기
         document.getElementById('upload-btn').addEventListener('click', () => {
             document.getElementById('pdf-upload').click();
         });
 
-        // 초기화 버튼 이벤트
+        // === 프로젝트 관리 관련 이벤트 ===
+        // 초기화 버튼: 프로젝트를 완전히 초기화 (확인 대화상자 포함)
         document.getElementById('reset-btn').addEventListener('click', () => {
             if (confirm('모든 태그, 관계, 저장 데이터를 초기화하시겠습니까?')) {
                 this.resetProject();
             }
         });
 
-        // PDF 컨트롤 이벤트
+        // === PDF 뷰어 제어 관련 이벤트 ===
+        // 확대 버튼: PDF를 확대합니다
         document.getElementById('zoom-in').addEventListener('click', () => {
             this.pdfManager.zoomIn();
         });
 
+        // 축소 버튼: PDF를 축소합니다
         document.getElementById('zoom-out').addEventListener('click', () => {
             this.pdfManager.zoomOut();
         });
 
+        // 화면 맞춤 버튼: PDF를 화면 크기에 맞춥니다
         document.getElementById('zoom-fit').addEventListener('click', () => {
             this.pdfManager.fitToScreen();
         });
 
-        // PDF 페이지 넘김 버튼 이벤트
+        // === PDF 페이지 네비게이션 관련 이벤트 ===
+        // 이전 페이지 버튼: 이전 페이지로 이동하고 태그 목록을 현재 페이지에 맞게 업데이트
         document.getElementById('prev-page').addEventListener('click', () => {
             this.pdfManager.previousPage();
             this.updateTagListsForCurrentPage();
         });
+        
+        // 다음 페이지 버튼: 다음 페이지로 이동하고 태그 목록을 현재 페이지에 맞게 업데이트
         document.getElementById('next-page').addEventListener('click', () => {
             this.pdfManager.nextPage();
             this.updateTagListsForCurrentPage();
         });
 
-        // 프로젝트 관리 이벤트
+        // === 파일 저장/불러오기 관련 이벤트 ===
+        // 저장 버튼: 현재 프로젝트를 브라우저 로컬 저장소에 저장
         document.getElementById('save-btn').addEventListener('click', () => {
             this.saveProject();
         });
 
+        // 불러오기 버튼: 저장된 프로젝트를 불러오기
         document.getElementById('load-btn').addEventListener('click', () => {
             this.loadProject();
         });
 
+        // 내보내기 버튼: 현재 프로젝트를 Excel 파일로 내보내기
         document.getElementById('export-btn').addEventListener('click', () => {
             this.exportToExcel();
         });
 
-        // 자동 인식 및 패턴 설정 이벤트
+        // === 태그 인식 및 패턴 설정 관련 이벤트 ===
+        // 자동 인식 버튼: PDF에서 태그를 자동으로 인식하고 분류
         document.getElementById('auto-recognize').addEventListener('click', () => {
             this.autoRecognizeTags();
         });
 
+        // 패턴 설정 버튼: 태그 인식에 사용할 정규표현식 패턴 설정 모달 열기
         document.getElementById('pattern-settings').addEventListener('click', () => {
             console.log('패턴 설정 버튼 클릭');
             try {
@@ -121,25 +171,29 @@ class PIDApp {
             }
         });
 
-        // Selected Tags Management
+        // === 선택된 태그 관리 관련 이벤트 ===
+        // 선택 해제 버튼: 현재 선택된 모든 태그의 선택을 해제
         document.getElementById('clear-selected').addEventListener('click', () => {
             this.clearSelectedTags();
         });
 
+        // 연결관계 생성 버튼: 선택된 2개 태그 간의 연결관계(connection) 생성
         document.getElementById('create-connection').addEventListener('click', () => {
             this.createConnectionFromSelected();
         });
 
+        // 설치관계 생성 버튼: 선택된 태그들 간의 설치관계(installation) 생성
         document.getElementById('create-installation').addEventListener('click', () => {
             this.createInstallationFromSelected();
         });
 
-        // Relationships panel toggle
+        // === 관계 패널 및 검색 관련 이벤트 ===
+        // 관계 패널 토글 버튼: 관계 목록 패널을 접기/펼치기
         document.getElementById('toggle-relationships').addEventListener('click', () => {
             this.toggleRelationshipsPanel();
         });
 
-        // 태그 검색 이벤트
+        // 태그 검색 입력 필드: 입력한 텍스트로 태그 목록을 실시간 필터링
         document.getElementById('tag-search').addEventListener('input', (e) => {
             this.filterTags(e.target.value);
         });

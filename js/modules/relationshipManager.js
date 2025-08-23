@@ -45,23 +45,24 @@ export class RelationshipManager {
     createRelationship(fromTag, toTag, relationshipType, additionalData = {}) {
         // Validate relationship
         if (!this.isValidRelationship(fromTag.category, toTag.category, relationshipType)) {
-            throw new Error(`${fromTag.category}에서 ${toTag.category}로의 ${relationshipType} 관계는 허용되지 않습니다.`);
+            throw new Error(`${fromTag.category} 태그에서 ${toTag.category} 태그로의 ${relationshipType} 관계는 허용되지 않습니다.`);
         }
 
+        // 2단계: 새로운 관계 객체 생성 및 메타데이터 설정
         const relationship = {
-            id: this.generateRelationshipId(),
-            type: relationshipType,
-            from: {
-                id: fromTag.id,
-                name: fromTag.name,
-                category: fromTag.category,
-                type: fromTag.type
+            id: this.generateRelationshipId(),      // 고유한 관계 ID 생성
+            type: relationshipType,                  // 관계 유형 ('connection' 또는 'installation')
+            from: {                                  // 출발 태그 정보
+                id: fromTag.id,                      // 출발 태그 ID
+                name: fromTag.name,                  // 출발 태그 이름
+                category: fromTag.category,          // 출발 태그 카테고리
+                type: fromTag.type                   // 출발 태그 세부 유형
             },
-            to: {
-                id: toTag.id,
-                name: toTag.name,
-                category: toTag.category,
-                type: toTag.type
+            to: {                                    // 도착 태그 정보
+                id: toTag.id,                        // 도착 태그 ID
+                name: toTag.name,                    // 도착 태그 이름
+                category: toTag.category,            // 도착 태그 카테고리
+                type: toTag.type                     // 도착 태그 세부 유형
             },
             created: new Date().toISOString(),
             description: this.generateRelationshipDescription(fromTag, toTag, relationshipType),
