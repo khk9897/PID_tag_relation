@@ -63,58 +63,92 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Tag Tabs -->
-                <div class="tag-tabs">
-                    <button class="tab-btn active" data-tab="equipment">Equipment</button>
-                    <button class="tab-btn" data-tab="line">Line</button>
-                    <button class="tab-btn" data-tab="instrument">Instrument</button>
+
+                <!-- Control Buttons -->
+                <div class="tag-controls">
+                    <button id="auto-recognize" class="btn btn-primary btn-compact">자동 인식</button>
+                    <button id="pattern-settings" class="btn btn-secondary btn-compact">패턴 설정</button>
+                    <input type="text" id="tag-search" placeholder="검색..." class="search-compact">
                 </div>
 
-                <!-- Search and Filter -->
-                <div class="tag-search">
-                    <input type="text" id="tag-search" placeholder="태그 검색...">
-                    <button id="auto-recognize" class="btn btn-primary">자동 인식</button>
-                <button id="pattern-settings" class="btn btn-secondary">패턴 설정</button>
+                <!-- Selected Tags Section -->
+                <div class="selected-tags-section">
+                    <div class="section-header">
+                        <h3>선택된 태그 <span id="selected-count">0</span></h3>
+                        <button id="clear-selected" class="btn btn-sm btn-outline">모두 해제</button>
+                    </div>
+                    <div class="selected-tags-container" id="selected-tags-container">
+                        <div class="empty-selection">태그를 선택해주세요</div>
+                    </div>
+                    <div class="relationship-actions">
+                        <button id="create-connection" class="btn btn-primary btn-sm" disabled>연결관계 생성</button>
+                        <button id="create-installation" class="btn btn-success btn-sm" disabled>설치관계 생성</button>
+                    </div>
                 </div>
 
-                <!-- Tag Lists -->
-                <div class="tag-content">
-                    <div class="tag-list active" id="equipment-list">
-                        <div class="tag-list-header">
-                            <h3>Equipment Tags</h3>
-                            <button class="btn btn-sm" onclick="addManualTag('equipment')">수동 추가</button>
-                        </div>
-                        <ul class="tags" id="equipment-tags"></ul>
+                <!-- Tag Lists Section -->
+                <div class="tag-lists-section">
+                    <div class="tag-tabs">
+                        <button class="tab-btn active" data-tab="equipment">
+                            <span class="tab-icon">⚙️</span>
+                            <span class="tab-label">Equipment</span>
+                            <span class="tab-count" id="equipment-count">0</span>
+                        </button>
+                        <button class="tab-btn" data-tab="line">
+                            <span class="tab-icon">📏</span>
+                            <span class="tab-label">Line</span>
+                            <span class="tab-count" id="line-count">0</span>
+                        </button>
+                        <button class="tab-btn" data-tab="instrument">
+                            <span class="tab-icon">🔧</span>
+                            <span class="tab-label">Instrument</span>
+                            <span class="tab-count" id="instrument-count">0</span>
+                        </button>
                     </div>
-                    
-                    <div class="tag-list" id="line-list">
-                        <div class="tag-list-header">
-                            <h3>Line Tags</h3>
-                            <button class="btn btn-sm" onclick="addManualTag('line')">수동 추가</button>
+
+                    <!-- Tag Lists -->
+                    <div class="tag-content">
+                        <div class="tag-list active" id="equipment-list">
+                            <div class="tag-list-header">
+                                <span class="category-label">Equipment Tags</span>
+                                <button class="btn btn-add" onclick="addManualTag('equipment')">+</button>
+                            </div>
+                            <ul class="tags" id="equipment-tags"></ul>
                         </div>
-                        <ul class="tags" id="line-tags"></ul>
-                    </div>
-                    
-                    <div class="tag-list" id="instrument-list">
-                        <div class="tag-list-header">
-                            <h3>Instrument Tags</h3>
-                            <button class="btn btn-sm" onclick="addManualTag('instrument')">수동 추가</button>
+                        
+                        <div class="tag-list" id="line-list">
+                            <div class="tag-list-header">
+                                <span class="category-label">Line Tags</span>
+                                <button class="btn btn-add" onclick="addManualTag('line')">+</button>
+                            </div>
+                            <ul class="tags" id="line-tags"></ul>
                         </div>
-                        <ul class="tags" id="instrument-tags"></ul>
+                        
+                        <div class="tag-list" id="instrument-list">
+                            <div class="tag-list-header">
+                                <span class="category-label">Instrument Tags</span>
+                                <button class="btn btn-add" onclick="addManualTag('instrument')">+</button>
+                            </div>
+                            <ul class="tags" id="instrument-tags"></ul>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Relationships Panel -->
                 <div class="relationships-panel">
-                    <h3>관계 목록</h3>
-                    <div class="relationship-tabs">
-                        <button class="tab-btn active" data-rel-tab="connections">연결관계</button>
-                        <button class="tab-btn" data-rel-tab="installations">설치관계</button>
+                    <div class="section-header">
+                        <h3>관계 목록</h3>
+                        <button id="toggle-relationships" class="btn btn-sm btn-outline">접기</button>
                     </div>
-                    <div class="relationship-content">
-                        <ul id="connections-list" class="relationship-list active"></ul>
-                        <ul id="installations-list" class="relationship-list"></ul>
+                    <div class="relationship-content" id="relationship-content">
+                        <div class="relationship-tabs">
+                            <button class="tab-btn active" data-rel-tab="connections">연결관계</button>
+                            <button class="tab-btn" data-rel-tab="installations">설치관계</button>
+                        </div>
+                        <div class="relationship-lists">
+                            <ul id="connections-list" class="relationship-list active"></ul>
+                            <ul id="installations-list" class="relationship-list"></ul>
+                        </div>
                     </div>
                 </div>
             </section>

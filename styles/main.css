@@ -1046,3 +1046,470 @@ input:checked + .toggle-slider:before {
 .pdf-overlay .tag-highlight:hover {
     cursor: pointer;
 }
+
+/* ===== NEW TAG BOARD REDESIGN ===== */
+
+/* Compact Controls */
+.tag-controls {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-compact {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+}
+
+.search-compact {
+    flex: 1;
+    min-width: 120px;
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/* Selected Tags Section */
+.selected-tags-section {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 12px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#selected-count {
+    background: #007bff;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #ced4da;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+}
+
+.btn-outline:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.selected-tags-container {
+    min-height: 60px;
+    max-height: 120px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 8px;
+    background: #fafafa;
+    margin-bottom: 12px;
+}
+
+.empty-selection {
+    color: #6c757d;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.selected-tag-item {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #ff4444, #ff6666);
+    color: white;
+    padding: 4px 8px;
+    margin: 2px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(255, 68, 68, 0.3);
+    animation: selectedTagFadeIn 0.3s ease;
+}
+
+@keyframes selectedTagFadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.selected-tag-item .tag-category {
+    font-size: 0.6rem;
+    opacity: 0.8;
+    margin-right: 4px;
+    text-transform: uppercase;
+}
+
+.selected-tag-item .remove-btn {
+    margin-left: 6px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selected-tag-item .remove-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+}
+
+.relationship-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.relationship-actions .btn {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+}
+
+/* Tag Lists Section */
+.tag-lists-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* New Tab Design */
+.tag-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0;
+}
+
+.tag-tabs .tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    gap: 4px;
+}
+
+.tag-tabs .tab-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.tag-tabs .tab-btn.active {
+    background: white;
+    color: #007bff;
+    border-bottom-color: #007bff;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.tab-label {
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+.tab-count {
+    background: #e9ecef;
+    color: #6c757d;
+    font-size: 0.65rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.tag-tabs .tab-btn.active .tab-count {
+    background: #007bff;
+    color: white;
+}
+
+/* Tag Content */
+.tag-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.tag-list {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.tag-list.active {
+    display: flex;
+}
+
+.tag-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.category-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.btn-add {
+    background: #28a745;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-add:hover {
+    background: #218838;
+    transform: scale(1.1);
+}
+
+/* Tag Items - Unified Style */
+.tags {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    margin: 0;
+    list-style: none;
+    background: white;
+}
+
+.tag-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.tag-item:hover {
+    background: #e9ecef;
+    border-color: #ced4da;
+    transform: translateX(2px);
+}
+
+.tag-item.selected {
+    background: linear-gradient(135deg, #ff4444, #ff6666) !important;
+    color: white !important;
+    border: 1px solid #ff0000 !important;
+    box-shadow: 0 2px 6px rgba(255, 0, 0, 0.3) !important;
+    transform: translateX(4px);
+}
+
+.tag-item .tag-name {
+    flex: 1;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tag-item .tag-info {
+    font-size: 0.65rem;
+    color: #6c757d;
+    margin-left: 8px;
+}
+
+.tag-item.selected .tag-info {
+    color: rgba(255,255,255,0.8);
+}
+
+.tag-item.current-page::before {
+    content: "📍";
+    margin-right: 6px;
+    font-size: 0.6rem;
+}
+
+/* Relationships Panel */
+.relationships-panel {
+    background: white;
+    border-top: 1px solid #dee2e6;
+    max-height: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.relationships-panel .section-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+.relationship-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.relationship-content.collapsed {
+    display: none;
+}
+
+.relationship-tabs {
+    display: flex;
+    background: #fafafa;
+}
+
+.relationship-tabs .tab-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.7rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.relationship-tabs .tab-btn:hover {
+    background: #f0f0f0;
+    color: #495057;
+}
+
+.relationship-tabs .tab-btn.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    background: white;
+}
+
+.relationship-lists {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.relationship-list {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    padding: 8px 12px;
+    margin: 0;
+    list-style: none;
+    background: white;
+}
+
+.relationship-list.active {
+    display: block;
+}
+
+.relationship-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    margin-bottom: 3px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: #495057;
+}
+
+.relationship-item .from-tag {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.relationship-item .arrow {
+    margin: 0 6px;
+    color: #6c757d;
+}
+
+.relationship-item .to-tag {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .tag-controls {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .search-compact {
+        min-width: 100%;
+    }
+    
+    .selected-tags-container {
+        max-height: 80px;
+    }
+    
+    .relationships-panel {
+        max-height: 150px;
+    }
+}

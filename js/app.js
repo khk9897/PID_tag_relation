@@ -28,6 +28,16 @@ class PIDApp {
         this.pdfManager.onMultipleTagsSelected = (tagIds, categories) => {
             this.handleMultipleTagSelection(tagIds, categories);
         };
+
+        // Initialize selected tags management
+        this.selectedTagsManager = {
+            selectedTags: new Set(),
+            updateUI: () => this.updateSelectedTagsUI(),
+            add: (tagId, category) => this.addToSelectedTags(tagId, category),
+            remove: (tagId) => this.removeFromSelectedTags(tagId),
+            clear: () => this.clearSelectedTags(),
+            getAll: () => Array.from(this.selectedTagsManager.selectedTags)
+        };
         
         // Set up PDF page rendering callback for highlight updates
         this.pdfManager.onPageRendered = () => {
@@ -109,6 +119,24 @@ class PIDApp {
             } catch (error) {
                 console.error('패턴 모달 열기 오류:', error);
             }
+        });
+
+        // Selected Tags Management
+        document.getElementById('clear-selected').addEventListener('click', () => {
+            this.clearSelectedTags();
+        });
+
+        document.getElementById('create-connection').addEventListener('click', () => {
+            this.createConnectionFromSelected();
+        });
+
+        document.getElementById('create-installation').addEventListener('click', () => {
+            this.createInstallationFromSelected();
+        });
+
+        // Relationships panel toggle
+        document.getElementById('toggle-relationships').addEventListener('click', () => {
+            this.toggleRelationshipsPanel();
         });
 
         // 태그 검색 이벤트
@@ -588,6 +616,9 @@ class PIDApp {
                 });
             }
         });
+        
+        // Update tag counts in tabs
+        this.updateTagCounts();
     }
 
     updateTagListsForCurrentPage() {
@@ -876,6 +907,265 @@ class PIDApp {
         }
 
         this.exportManager.exportToExcel(this.currentProject);
+    }
+
+    // ===== SELECTED TAGS MANAGEMENT =====
+
+    addToSelectedTags(tagId, category) {
+        const tag = this.findTagById(tagId);
+        if (!tag) return;
+
+        this.selectedTagsManager.selectedTags.add(tagId);
+        this.updateSelectedTagsUI();
+        this.updateRelationshipButtonsState();
+        console.log('태그 선택에 추가:', tagId, category);
+    }
+
+    removeFromSelectedTags(tagId) {
+        this.selectedTagsManager.selectedTags.delete(tagId);
+        this.updateSelectedTagsUI();
+        this.updateRelationshipButtonsState();
+        
+        // Also remove from PDF selection
+        if (this.pdfManager) {
+            this.pdfManager.selectedTags.delete(tagId);
+            // Remove visual selection from PDF
+            const highlight = document.querySelector(`.tag-highlight[data-tag-id="${tagId}"]`);
+            if (highlight && highlight.classList.contains('multi-selected')) {
+                this.pdfManager.removeTagSelection(highlight);
+            }
+        }
+        console.log('태그 선택에서 제거:', tagId);
+    }
+
+    clearSelectedTags() {
+        this.selectedTagsManager.selectedTags.clear();
+        this.updateSelectedTagsUI();
+        this.updateRelationshipButtonsState();
+        
+        // Also clear PDF selections
+        if (this.pdfManager) {
+            this.pdfManager.clearSelections();
+        }
+        
+        // Clear tag panel selections
+        this.clearTagPanelSelections();
+        console.log('모든 태그 선택 해제');
+    }
+
+    updateSelectedTagsUI() {
+        const container = document.getElementById('selected-tags-container');
+        const countElement = document.getElementById('selected-count');
+        
+        const selectedTags = Array.from(this.selectedTagsManager.selectedTags);
+        countElement.textContent = selectedTags.length;
+        
+        if (selectedTags.length === 0) {
+            container.innerHTML = '<div class="empty-selection">태그를 선택해주세요</div>';
+            return;
+        }
+        
+        const tagElements = selectedTags.map(tagId => {
+            const tag = this.findTagById(tagId);
+            if (!tag) return '';
+            
+            const categoryIcons = {
+                equipment: '⚙️',
+                line: '📏', 
+                instrument: '🔧'
+            };
+            
+            return `
+                <div class="selected-tag-item" data-tag-id="${tagId}">
+                    <span class="tag-category">${categoryIcons[tag.category] || ''}</span>
+                    <span class="tag-name">${tag.name}</span>
+                    <button class="remove-btn" onclick="app.removeFromSelectedTags('${tagId}')">×</button>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = tagElements;
+    }
+
+    updateRelationshipButtonsState() {
+        const selectedCount = this.selectedTagsManager.selectedTags.size;
+        const connectionBtn = document.getElementById('create-connection');
+        const installationBtn = document.getElementById('create-installation');
+        
+        const canCreateConnection = selectedCount === 2;
+        const canCreateInstallation = selectedCount >= 2;
+        
+        connectionBtn.disabled = !canCreateConnection;
+        installationBtn.disabled = !canCreateInstallation;
+        
+        // Update button text with count info
+        if (selectedCount < 2) {
+            connectionBtn.textContent = `연결관계 (${selectedCount}/2)`;
+            installationBtn.textContent = `설치관계 (${selectedCount}/2+)`;
+        } else {
+            connectionBtn.textContent = '연결관계 생성';
+            installationBtn.textContent = '설치관계 생성';
+        }
+    }
+
+    createConnectionFromSelected() {
+        const selectedTags = Array.from(this.selectedTagsManager.selectedTags);
+        if (selectedTags.length !== 2) {
+            alert('연결관계는 정확히 2개의 태그가 필요합니다.');
+            return;
+        }
+
+        const fromTag = this.findTagById(selectedTags[0]);
+        const toTag = this.findTagById(selectedTags[1]);
+        
+        if (!fromTag || !toTag) {
+            alert('선택된 태그를 찾을 수 없습니다.');
+            return;
+        }
+
+        // Create connection relationship
+        const connection = {
+            id: Date.now().toString(),
+            from: fromTag.id,
+            to: toTag.id,
+            fromName: fromTag.name,
+            toName: toTag.name,
+            type: 'connection',
+            created: new Date().toISOString()
+        };
+
+        this.currentProject.relationships.connections.push(connection);
+        this.updateRelationshipsList();
+        this.clearSelectedTags();
+        this.autoSave();
+        
+        console.log('연결관계 생성:', connection);
+        alert(`연결관계가 생성되었습니다: ${fromTag.name} → ${toTag.name}`);
+    }
+
+    createInstallationFromSelected() {
+        const selectedTags = Array.from(this.selectedTagsManager.selectedTags);
+        if (selectedTags.length < 2) {
+            alert('설치관계는 최소 2개의 태그가 필요합니다.');
+            return;
+        }
+
+        const tags = selectedTags.map(id => this.findTagById(id)).filter(tag => tag);
+        if (tags.length !== selectedTags.length) {
+            alert('선택된 태그를 찾을 수 없습니다.');
+            return;
+        }
+
+        // First tag is installed, others are installation targets
+        const installedTag = tags[0];
+        const installationTargets = tags.slice(1);
+
+        installationTargets.forEach(target => {
+            const installation = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                installed: installedTag.id,
+                target: target.id,
+                installedName: installedTag.name,
+                targetName: target.name,
+                type: 'installation',
+                created: new Date().toISOString()
+            };
+
+            this.currentProject.relationships.installations.push(installation);
+        });
+
+        this.updateRelationshipsList();
+        this.clearSelectedTags();
+        this.autoSave();
+        
+        console.log('설치관계 생성:', installationTargets.length, '개');
+        alert(`설치관계가 생성되었습니다: ${installedTag.name} → ${installationTargets.map(t => t.name).join(', ')}`);
+    }
+
+    toggleRelationshipsPanel() {
+        const content = document.getElementById('relationship-content');
+        const button = document.getElementById('toggle-relationships');
+        
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            button.textContent = '접기';
+        } else {
+            content.classList.add('collapsed');
+            button.textContent = '펼치기';
+        }
+    }
+
+    // Override handleMultipleTagSelection to integrate with selected tags manager
+    handleMultipleTagSelection(tagIds, categories) {
+        console.log('다중 태그 선택:', tagIds, categories);
+        
+        if (tagIds.length === 0) {
+            this.clearTagPanelSelections();
+            return;
+        }
+        
+        // Update selected tags manager
+        this.selectedTagsManager.selectedTags.clear();
+        tagIds.forEach(tagId => {
+            this.selectedTagsManager.selectedTags.add(tagId);
+        });
+        this.updateSelectedTagsUI();
+        this.updateRelationshipButtonsState();
+        
+        // 단일 카테고리인 경우 해당 탭으로 전환
+        if (categories.length === 1) {
+            this.switchToTab(categories[0]);
+        }
+        
+        // 태그 패널에서 해당 태그들을 모두 선택 표시 (PDF 다중 선택은 보존)
+        this.clearTagPanelSelections();
+        
+        // PDF에서도 선택된 태그들을 하이라이트
+        if (tagIds.length === 1) {
+            // 단일 선택 시에는 기존 단일 선택 스타일 사용
+            this.pdfManager.highlightSelectedTag(tagIds[0]);
+        }
+        // 다중 선택 시에는 PDF에서 이미 다중 선택 스타일이 적용되어 있으므로 그대로 유지
+        
+        tagIds.forEach(tagId => {
+            // 모든 태그 아이템을 검사해서 찾기
+            const allTagItems = document.querySelectorAll('.tag-item');
+            for (const item of allTagItems) {
+                if (item.dataset.tagId === tagId || item.dataset.id === tagId) {
+                    item.classList.add('selected');
+                    console.log('태그 패널에서 선택 표시:', tagId, item);
+                    break;
+                }
+            }
+        });
+        
+        // 첫 번째 선택된 태그로 스크롤
+        if (tagIds.length > 0) {
+            // Use direct dataset comparison to avoid CSS selector issues with special characters
+            const allTagItems = document.querySelectorAll('.tag-item');
+            let firstTagElement = null;
+            for (const item of allTagItems) {
+                if (item.dataset.tagId === tagIds[0] || item.dataset.id === tagIds[0]) {
+                    firstTagElement = item;
+                    break;
+                }
+            }
+            if (firstTagElement) {
+                firstTagElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        // 선택 정보 표시
+        this.showSelectionInfo(tagIds.length, categories);
+    }
+
+    // Update tag counts in tabs
+    updateTagCounts() {
+        if (!this.currentProject) return;
+        
+        document.getElementById('equipment-count').textContent = this.currentProject.tags.equipment.length;
+        document.getElementById('line-count').textContent = this.currentProject.tags.line.length;
+        document.getElementById('instrument-count').textContent = this.currentProject.tags.instrument.length;
     }
 }
 
