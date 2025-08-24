@@ -84,6 +84,39 @@ class PIDApp {
         this.setupKeyboardShortcuts();  // 키보드 단축키 설정
         this.setupTabSwitching();       // 탭 전환 기능 설정
         this.loadAutoSave();            // 자동 저장된 프로젝트 복원
+        
+        // 개발/테스트를 위한 자동 PDF 로드
+        this.autoLoadTestPDF();
+    }
+    
+    /**
+     * 테스트용 PDF 자동 로드 기능
+     * PID.pdf 파일을 자동으로 로드하여 테스트 편의성 제공
+     */
+    async autoLoadTestPDF() {
+        try {
+            // PDF 파일 자동 로드
+            console.log('테스트용 PDF 자동 로드 시도...');
+            const response = await fetch('./PDF/PID.pdf');
+            if (response.ok) {
+                const blob = await response.blob();
+                const file = new File([blob], 'PID.pdf', { type: 'application/pdf' });
+                
+                console.log('PDF 파일 자동 로드 성공');
+                await this.handlePDFUpload(file);
+                
+                // 3초 후 자동 태그 인식 실행
+                setTimeout(() => {
+                    console.log('자동 태그 인식 실행...');
+                    this.autoRecognizeTags();
+                }, 3000);
+                
+            } else {
+                console.log('PDF 파일을 찾을 수 없습니다. 수동으로 업로드해주세요.');
+            }
+        } catch (error) {
+            console.log('PDF 자동 로드 실패:', error.message, '- 수동으로 업로드해주세요.');
+        }
     }
 
     /**
@@ -651,7 +684,8 @@ class PIDApp {
 
         try {
             // Extract text with positions from PDF for advanced instrument matching
-            const textWithPositions = await this.pdfManager.extractTextWithPositions();
+            // 테스트용으로 첫 페이지만 처리
+            const textWithPositions = await this.pdfManager.extractTextWithPositions(true);
             
             // Recognize tags using positional patterns
             const recognizedTags = this.tagManager.recognizeTags(null, textWithPositions);
